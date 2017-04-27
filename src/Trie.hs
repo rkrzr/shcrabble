@@ -5,29 +5,6 @@ module Trie (
   insert
 ) where
 
--- import qualified Data.Map as Map
---
--- data Trie2 = Node {
---     trieValue :: (Maybe (Char, Bool)),
---     trieChildren :: (Map.Map Char Trie2)
---   } deriving (Eq, Show)
---
--- emptyTrie2 = Node Nothing Map.empty
---
--- upsertChar :: Trie2 -> (Char, Bool) -> Map.Map Char Trie2 -> Trie2
--- upsertChar trie@(Node char children) key@(newChar, bool) value =
---   case Map.lookup newChar children of
---     -- insert the character if it is not in there yet
---     Nothing   -> Node char $ Map.insert newChar newTrie children
---     -- possibly update the boolean value if it changed
---     Just trie2@(Node (Just (newChar, bool2)) children2)-> case bool == bool2 of
---       True  -> trie  -- the trie is unchanged
---       False -> trie -- TODO: actually update bool2 to bool
---
---   where
---     newTrie = Node (Just key) Map.empty
-
-
 import Data.Maybe
 import Control.Monad (liftM)
 import qualified Data.Map as M
