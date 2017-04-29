@@ -46,17 +46,44 @@ getNeighbors pf (x,y) = Map.map (\cs -> Map.lookup cs pf) neighborMap
 -- getAllFreeNeighbors pf = concatMap (getFreeNeighbors pf) (Map.keys pf)
 
 -- find all words in the bag that could be attached to the given character
-getMatchingWords :: Char -> Bag -> (Char, [String])
-getMatchingWords c [] = (c, [])
-getMatchingWords c xs = (c, filter (elem c) xs)
+getMatchingWords :: Bag -> PlacedPiece -> (PlacedPiece, [String])
+getMatchingWords [] pp                   = (pp, [])
+getMatchingWords xs pp@(PlacedPiece c _) = (pp, filter (elem c) xs)
+
+-- check if the given word does not touch or intersect with other pieces
+isWordFitting :: PlacedPiece -> [PlacedPiece] -> PlayingField -> Bool
+isWordFitting pp pps pf = undefined
+
+-- It's often possible to attach a word in several ways to a given piece
+-- think e.g. about words that contain the character of the placed piece several times
+getAllPossiblePlacements :: String -> PlacedPiece -> [[PlacedPiece]]
+getAllPossiblePlacements word pp = undefined
+
+placeWord :: String -> PlacedPiece -> PlayingField -> PlayingField
+placeWord = undefined
+
+removeWord :: String -> Bag -> Bag
+removeWord = undefined
+
+-- get all placed pieces where a word could be attached, i.e.
+-- all pieces where either the x or the y-axis is still free
+-- TODO: Allow words to be extended?
+getAvailablePlacedPieces :: PlayingField -> [PlacedPiece]
+getAvailablePlacedPieces pf = Map.elems pf  -- TODO: Implement this properly
 
 executeTurn :: PlayingField -> Bag -> (PlayingField, Bag)
-executeTurn pf [] = (pf, [])  -- the game should end here
-executeTurn _pf _words = undefined
+executeTurn pf []  = (pf, [])  -- the game should end here
+executeTurn pf bag = case matchingWords of
+    []           -> error "No more words can be played."
+    ((_, []): _) -> error "Should not happen. We filter this out earlier."
+    ((pp, (word:words)):ws) -> (placeWord word pp pf, removeWord word bag)
   where
-    _freeCharacters = undefined
-    _matchingWords = map getMatchingWords _freeCharacters
+    -- all placed pieces where a word could be attached
+    availablePlacedPieces = getAvailablePlacedPieces pf
 
+    matchingWords :: [(PlacedPiece, [String])]
+    matchingWords = filter (\(_, ws) -> ws /= []) $ map (getMatchingWords bag) availablePlacedPieces
+    -- _fittingWords = filter isWordFitting matchingWords
 
 main :: IO ()
 main = do
