@@ -2,6 +2,7 @@ module Types (
   Bag,
   Coordinates,
   Direction(..),
+  MoveType(..),
   PlacedPiece(..),
   PlayingField
 ) where
@@ -14,6 +15,9 @@ type Coordinates = (Int, Int)
 type Bag = [String]
 
 data Direction = L | R | Up | Down
+  deriving (Eq, Enum, Ord, Show)
+
+data MoveType = Horizontal | Vertical
   deriving (Eq, Enum, Ord, Show)
 
 -- each playing piece is simply a character

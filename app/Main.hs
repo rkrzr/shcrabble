@@ -4,6 +4,7 @@ import SVG
 import Trie
 import Types
 import qualified Data.Map as Map
+import Data.Maybe (fromJust)
 
 
 someWords :: [String]
@@ -59,8 +60,23 @@ isWordFitting pp pps pf = undefined
 getAllPossiblePlacements :: String -> PlacedPiece -> [[PlacedPiece]]
 getAllPossiblePlacements word pp = undefined
 
+-- Note: We only allow *either* a vertical *or* a horizontal move for now
+determineFreeDirection :: PlacedPiece -> PlayingField -> Maybe MoveType
+determineFreeDirection (PlacedPiece c cs) pf = if isVerticalFree
+    then Just Vertical
+    else if isHorizontalFree
+      then Just Horizontal
+      else Nothing
+  where
+    neighbors = getNeighbors pf cs
+    verticalNeighbors   = map (\d -> fromJust (Map.lookup d neighbors)) [Up, Down]
+    horizontalNeighbors = map (\d -> fromJust (Map.lookup d neighbors)) [L, R]
+    isVerticalFree   = all (== Nothing) verticalNeighbors
+    isHorizontalFree = all (== Nothing) horizontalNeighbors
+
 placeWord :: String -> PlacedPiece -> PlayingField -> PlayingField
-placeWord = undefined
+placeWord [] pp pf = pf
+placeWord word pp pf = undefined
 
 removeWord :: String -> Bag -> Bag
 removeWord = undefined
