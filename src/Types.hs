@@ -1,4 +1,5 @@
 module Types (
+  Bag,
   Coordinates,
   Direction(..),
   PlacedPiece(..),
@@ -8,6 +9,9 @@ module Types (
 import qualified Data.Map as Map
 
 type Coordinates = (Int, Int)
+
+-- the bag of remaining words
+type Bag = [String]
 
 data Direction = L | R | Up | Down
   deriving (Eq, Enum, Ord, Show)

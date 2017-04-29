@@ -31,6 +31,9 @@ getNeighbors pf (x,y) = Map.map (\cs -> Map.lookup cs pf) neighborMap
     neighborCoordinates = [(L, (x-1, y)), (R, (x+1, y)), (Up, (x, y+1)), (Down, (x, y-1))]
     neighborMap = Map.fromList neighborCoordinates
 
+-- getFreeNeighbors :: PlayingField -> Coordinates -> Map
+-- getFreeNeighbors
+
 -- getFreeNeighbors :: PlayingField -> Coordinates -> [(Coordinates, Bool)]
 -- getFreeNeighbors pf (x,y) = neighbors
 --   where
@@ -42,14 +45,33 @@ getNeighbors pf (x,y) = Map.map (\cs -> Map.lookup cs pf) neighborMap
 -- getAllFreeNeighbors :: PlayingField -> [(Coordinates, Bool)]
 -- getAllFreeNeighbors pf = concatMap (getFreeNeighbors pf) (Map.keys pf)
 
+-- find all words in the bag that could be attached to the given character
+getMatchingWords :: Char -> Bag -> (Char, [String])
+getMatchingWords c [] = (c, [])
+getMatchingWords c xs = (c, filter (elem c) xs)
+
+executeTurn :: PlayingField -> Bag -> (PlayingField, Bag)
+executeTurn pf [] = (pf, [])  -- the game should end here
+executeTurn _pf _words = undefined
+  where
+    _freeCharacters = undefined
+    _matchingWords = map getMatchingWords _freeCharacters
+
+
 main :: IO ()
 main = do
   let trie = foldl (flip insert) emptyTrie someWords
       firstWord = head someWords
+      _remainingWords = tail someWords
       playingField = placeFirstWord firstWord Map.empty
   putStrLn $ "A trie: " ++ show trie
   putStrLn $ "All prefixes: " ++ show (allPrefixes trie)
   putStrLn $ "The playing field: " ++ show playingField
-  putStrLn $ generatePlayingFieldSVG playingField
+  -- putStrLn $ generatePlayingFieldSVG playingField
   writePlayingField "/tmp/shcrabble.svg" playingField
   -- putStrLn $ "Free neighbors: " ++ show (getAllFreeNeighbors playingField)
+
+  -- let (playingField', remainingWords') = executeTurn playingField remainingWords
+  -- writePlayingField "/tmp/shcrabble2.svg" playingField'
+  -- putStrLn $ "remainingWords': " ++ show remainingWords'
+
