@@ -9,11 +9,13 @@ import qualified Data.Map as Map
 someWords :: [String]
 someWords = ["just", "some", "random", "words", "without", "meaning"]
 
+allDirections :: [Direction]
+allDirections = [L ..]
 
 placeFirstWord' :: String -> PlayingField -> Coordinates -> PlayingField
 placeFirstWord' [] pf _         = pf
-placeFirstWord' (z:zs) pf (x,y) = placeFirstWord' zs newPlayingField (x+1, y)
-  where newPlayingField = Map.insert (x,y) z pf
+placeFirstWord' (z:zs) pf cs@(x,y) = placeFirstWord' zs newPlayingField (x+1, y)
+  where newPlayingField = Map.insert cs (PlacedPiece z cs) pf
 
 -- we always place the first word starting from (1,1) to the right
 placeFirstWord :: String -> PlayingField -> PlayingField
@@ -23,6 +25,22 @@ placeFirstWord xs pf = placeFirstWord' xs pf (1,1)
 writePlayingField :: FilePath -> PlayingField -> IO ()
 writePlayingField filePath pf = writeFile filePath (generatePlayingFieldSVG pf)
 
+getNeighbors :: PlayingField -> Coordinates -> Map.Map Direction (Maybe PlacedPiece)
+getNeighbors pf (x,y) = Map.map (\cs -> Map.lookup cs pf) neighborMap
+  where
+    neighborCoordinates = [(L, (x-1, y)), (R, (x+1, y)), (Up, (x, y+1)), (Down, (x, y-1))]
+    neighborMap = Map.fromList neighborCoordinates
+
+-- getFreeNeighbors :: PlayingField -> Coordinates -> [(Coordinates, Bool)]
+-- getFreeNeighbors pf (x,y) = neighbors
+--   where
+--     neighborCoordinates = [(x-1, y), (x+1, y), (x, y+1), (x, y-1)]
+--     isFieldFree cs = Map.notMember cs pf
+--     neighbors = map (\(d, cs) -> (cs, isFieldFree cs)) neighborCoordinates
+
+
+-- getAllFreeNeighbors :: PlayingField -> [(Coordinates, Bool)]
+-- getAllFreeNeighbors pf = concatMap (getFreeNeighbors pf) (Map.keys pf)
 
 main :: IO ()
 main = do
@@ -34,3 +52,4 @@ main = do
   putStrLn $ "The playing field: " ++ show playingField
   putStrLn $ generatePlayingFieldSVG playingField
   writePlayingField "/tmp/shcrabble.svg" playingField
+  -- putStrLn $ "Free neighbors: " ++ show (getAllFreeNeighbors playingField)
