@@ -6,6 +6,7 @@ import Types
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 import Data.List (delete)
+import Debug.Trace (traceShowId)
 
 
 someWords :: [String]
@@ -93,8 +94,9 @@ insertString :: Direction -> String -> PlacedPiece -> PlayingField -> PlayingFie
 insertString _ []     _                  pf = pf
 insertString d (w:ws) (PlacedPiece c cs) pf = insertString d ws pp' pf'
   where
-    pp' = PlacedPiece w cs
-    pf' = Map.insert (goOne d cs) pp' pf
+    cs' = goOne d cs
+    pp' = PlacedPiece w cs'
+    pf' = Map.insert cs' pp' pf
 
 -- insert a word at or around the given placed piece
 -- Note: we assume here that we validated earlier that the word fits
@@ -104,7 +106,8 @@ insertWord mt word pp@(PlacedPiece c cs) pf =
     (prefix, _c:suffix) = break (== c) word
   in case mt of
     Horizontal -> insertString R suffix pp (insertString L (reverse prefix) pp pf)
-    Vertical   -> insertString Down suffix pp (insertString Up (reverse prefix) pp pf)
+    -- Note: SVG spans coordindates to the right and down...
+    Vertical   -> insertString Up suffix pp (insertString Down (reverse prefix) pp pf)
 
 removeWord :: String -> Bag -> Bag
 removeWord _ []   = error "Cannot remove a word from an empty bag."
@@ -121,7 +124,7 @@ executeTurn pf []  = (pf, [])  -- the game should end here
 executeTurn pf bag = case matchingWords of
     []           -> error "No more words can be played."
     ((_, []): _) -> error "Should not happen. We filter this out earlier."
-    ((pp, (word:words)):ws) -> (placeWord word pp pf, removeWord word bag)
+    ((pp, (word:words)):ws) -> (placeWord (traceShowId word) pp pf, removeWord word bag)
   where
     -- all placed pieces where a word could be attached
     availablePlacedPieces = getAvailablePlacedPieces pf
@@ -130,19 +133,27 @@ executeTurn pf bag = case matchingWords of
     matchingWords = filter (\(_, ws) -> ws /= []) $ map (getMatchingWords bag) availablePlacedPieces
     -- _fittingWords = filter isWordFitting matchingWords
 
+
+executeGame :: PlayingField -> Bag -> IO PlayingField
+executeGame pf []  = return pf
+executeGame pf bag = do
+  let (pf', bag') = executeTurn pf bag
+  executeGame pf' bag'
+
 main :: IO ()
 main = do
   let trie = foldl (flip insert) emptyTrie someWords
       (firstWord:remainingWords) = someWords
       playingField = placeFirstWord firstWord Map.empty
-  putStrLn $ "A trie: " ++ show trie
-  putStrLn $ "All prefixes: " ++ show (allPrefixes trie)
-  putStrLn $ "The playing field: " ++ show playingField
+  -- putStrLn $ "A trie: " ++ show trie
+  -- putStrLn $ "All prefixes: " ++ show (allPrefixes trie)
+  -- putStrLn $ "The playing field: " ++ show playingField
   -- putStrLn $ generatePlayingFieldSVG playingField
   writePlayingField "/tmp/shcrabble.svg" playingField
   -- putStrLn $ "Free neighbors: " ++ show (getAllFreeNeighbors playingField)
 
-  let (playingField', remainingWords') = executeTurn playingField remainingWords
+  -- let (playingField', remainingWords') = executeTurn playingField remainingWords
+  playingField' <- executeGame playingField remainingWords
   writePlayingField "/tmp/shcrabble2.svg" playingField'
   -- putStrLn $ "remainingWords': " ++ show remainingWords'
 

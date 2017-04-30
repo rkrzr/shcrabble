@@ -24,8 +24,9 @@ generatePlayingFieldSVG pf = header ++ pieces ++ "\n" ++ footer
     minY = minimum ys
     maxX = maximum xs
     maxY = maximum ys
-    minXoffset = (abs minX - 1) * sideLength
-    minYoffset = (abs minY - 1) * sideLength
+    -- TODO: Fix these offsets properly
+    minXoffset = (abs minX) * sideLength
+    minYoffset = (abs minY) * sideLength
     sideLengthX = minXoffset + sideLength * (maxX + 2)
     sideLengthY = minYoffset + sideLength * (maxY + 2)
 
