@@ -6,7 +6,8 @@ import Types
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 import Data.List (delete)
-import Debug.Trace (traceShowId)
+import Debug.Trace (trace, traceShowId)
+import System.Environment (getArgs)
 
 
 someWords :: [String]
@@ -85,7 +86,9 @@ placeWord [] pp pf = pf
 placeWord word pp pf = case determineFreeDirection pp pf of
     Just Horizontal -> insertWord Horizontal word pp pf
     Just Vertical   -> insertWord Vertical word pp pf
-    Nothing         -> error $ "The given word is invalid and should have been filtered out earlier." ++ word
+    -- TODO: Don't use trace here.
+    -- TODO: Retry the skipped word later?
+    Nothing         -> trace ("Skipping the word \"" ++ word ++ "\". There is no free spot.") pf
 
 goOne :: Direction -> Coordinates -> Coordinates
 goOne Up   (x,y) = (x, y+1)
@@ -123,12 +126,12 @@ removeWord word bag = delete word bag
 getAvailablePlacedPieces :: PlayingField -> [PlacedPiece]
 getAvailablePlacedPieces pf = Map.elems pf  -- TODO: Implement this properly
 
-executeTurn :: PlayingField -> Bag -> (PlayingField, Bag)
-executeTurn pf []  = (pf, [])  -- the game should end here
+executeTurn :: PlayingField -> Bag -> Maybe (PlayingField, Bag)
+executeTurn pf []  = Nothing  -- end of the game
 executeTurn pf bag = case matchingWords of
-    []           -> error "No more words can be played."
+    []           -> trace "No more words can be played." Nothing
     ((_, []): _) -> error "Should not happen. We filter this out earlier."
-    ((pp, (word:words)):ws) -> (placeWord (traceShowId word) pp pf, removeWord word bag)
+    ((pp, (word:words)):ws) -> Just (placeWord (traceShowId word) pp pf, removeWord word bag)
   where
     -- all placed pieces where a word could be attached
     availablePlacedPieces = getAvailablePlacedPieces pf
@@ -140,8 +143,10 @@ executeTurn pf bag = case matchingWords of
 executeGame :: PlayingField -> Bag -> IO PlayingField
 executeGame pf []  = return pf
 executeGame pf bag = do
-  let (pf', bag') = executeTurn pf bag
-  executeGame pf' bag'
+  let maybeEndOfGame = executeTurn pf bag
+  case maybeEndOfGame of
+    Nothing          -> putStrLn "The End." >> return pf
+    Just (pf', bag') -> executeGame pf' bag'
 
 readWordFile :: FilePath -> IO [String]
 readWordFile path = do
@@ -153,19 +158,23 @@ readWordFile path = do
 
 main :: IO ()
 main = do
-  allWords <- readWordFile "test.txt"
-  let trie = foldl (flip insert) emptyTrie allWords
-      (firstWord:remainingWords) = allWords
-      playingField = placeFirstWord firstWord Map.empty
-  -- putStrLn $ "A trie: " ++ show trie
-  -- putStrLn $ "All prefixes: " ++ show (allPrefixes trie)
-  -- putStrLn $ "The playing field: " ++ show playingField
-  -- putStrLn $ generatePlayingFieldSVG playingField
-  writePlayingField "/tmp/shcrabble.svg" playingField
-  -- putStrLn $ "Free neighbors: " ++ show (getAllFreeNeighbors playingField)
+  args <- getArgs
+  if length args == 0
+    then error "Please provide a file with words. Usage: ./shcrabble \"wordFile.txt\"\n"
+    else do
+      allWords <- readWordFile (head args)
+      let trie = foldl (flip insert) emptyTrie allWords
+          (firstWord:remainingWords) = allWords
+          playingField = placeFirstWord firstWord Map.empty
+      -- putStrLn $ "A trie: " ++ show trie
+      -- putStrLn $ "All prefixes: " ++ show (allPrefixes trie)
+      -- putStrLn $ "The playing field: " ++ show playingField
+      -- putStrLn $ generatePlayingFieldSVG playingField
+      writePlayingField "/tmp/shcrabble.svg" playingField
+      -- putStrLn $ "Free neighbors: " ++ show (getAllFreeNeighbors playingField)
 
-  -- let (playingField', remainingWords') = executeTurn playingField remainingWords
-  playingField' <- executeGame playingField remainingWords
-  writePlayingField "/tmp/shcrabble2.svg" playingField'
-  -- putStrLn $ "remainingWords': " ++ show remainingWords'
+      -- let (playingField', remainingWords') = executeTurn playingField remainingWords
+      playingField' <- executeGame playingField remainingWords
+      writePlayingField "/tmp/shcrabble2.svg" playingField'
+      -- putStrLn $ "remainingWords': " ++ show remainingWords'
 
