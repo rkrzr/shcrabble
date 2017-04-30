@@ -76,7 +76,32 @@ determineFreeDirection (PlacedPiece c cs) pf = if isVerticalFree
 
 placeWord :: String -> PlacedPiece -> PlayingField -> PlayingField
 placeWord [] pp pf = pf
-placeWord word pp pf = undefined
+placeWord word pp pf = case determineFreeDirection pp pf of
+    Just Horizontal -> insertWord Horizontal word pp pf
+    Just Vertical   -> insertWord Vertical word pp pf
+    Nothing         -> error "The given word is invalid and should have been filtered out earlier."
+
+goOne :: Direction -> Coordinates -> Coordinates
+goOne Up   (x,y) = (x, y+1)
+goOne Down (x,y) = (x, y-1)
+goOne L    (x,y) = (x-1, y)
+goOne R    (x,y) = (x+1, y)
+
+-- insert a string in the given direction starting from the given placed piece
+insertString :: Direction -> String -> PlacedPiece -> PlayingField -> PlayingField
+insertString _ []     _                  pf = pf
+insertString d (w:ws) (PlacedPiece c cs) pf = insertString d ws pp' pf'
+  where
+    pp' = PlacedPiece w cs
+    pf' = Map.insert (goOne d cs) pp' pf
+
+-- insert a word at or around the given placed piece
+-- Note: we assume here that we validated earlier that the word fits
+insertWord :: MoveType -> String -> PlacedPiece -> PlayingField -> PlayingField
+insertWord Horizontal word (PlacedPiece c cs) pf = undefined
+insertWord Vertical   word (PlacedPiece c cs) pf = undefined
+  where
+    (prefix, _c:suffix) = break (== c) word
 
 removeWord :: String -> Bag -> Bag
 removeWord = undefined
