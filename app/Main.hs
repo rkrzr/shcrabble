@@ -12,6 +12,10 @@ import Debug.Trace (traceShowId)
 someWords :: [String]
 someWords = ["just", "some", "random", "words", "without", "meaning"]
 
+lowerAlphabet = ['a' .. 'z']
+upperAlphabet = ['A' .. 'Z']
+allowedCharacters = lowerAlphabet ++ upperAlphabet
+
 allDirections :: [Direction]
 allDirections = [L ..]
 
@@ -81,7 +85,7 @@ placeWord [] pp pf = pf
 placeWord word pp pf = case determineFreeDirection pp pf of
     Just Horizontal -> insertWord Horizontal word pp pf
     Just Vertical   -> insertWord Vertical word pp pf
-    Nothing         -> error "The given word is invalid and should have been filtered out earlier."
+    Nothing         -> error $ "The given word is invalid and should have been filtered out earlier." ++ word
 
 goOne :: Direction -> Coordinates -> Coordinates
 goOne Up   (x,y) = (x, y+1)
@@ -133,17 +137,25 @@ executeTurn pf bag = case matchingWords of
     matchingWords = filter (\(_, ws) -> ws /= []) $ map (getMatchingWords bag) availablePlacedPieces
     -- _fittingWords = filter isWordFitting matchingWords
 
-
 executeGame :: PlayingField -> Bag -> IO PlayingField
 executeGame pf []  = return pf
 executeGame pf bag = do
   let (pf', bag') = executeTurn pf bag
   executeGame pf' bag'
 
+readWordFile :: FilePath -> IO [String]
+readWordFile path = do
+  content <- readFile path
+  let messyWords = concatMap words $ lines content
+      cleanWords = map (filter (`elem` allowedCharacters)) messyWords
+      longerWords = filter (\x -> length x > 1) cleanWords
+  return longerWords
+
 main :: IO ()
 main = do
-  let trie = foldl (flip insert) emptyTrie someWords
-      (firstWord:remainingWords) = someWords
+  allWords <- readWordFile "test.txt"
+  let trie = foldl (flip insert) emptyTrie allWords
+      (firstWord:remainingWords) = allWords
       playingField = placeFirstWord firstWord Map.empty
   -- putStrLn $ "A trie: " ++ show trie
   -- putStrLn $ "All prefixes: " ++ show (allPrefixes trie)
