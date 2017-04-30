@@ -5,6 +5,7 @@ import Trie
 import Types
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
+import Data.List (delete)
 
 
 someWords :: [String]
@@ -98,13 +99,16 @@ insertString d (w:ws) (PlacedPiece c cs) pf = insertString d ws pp' pf'
 -- insert a word at or around the given placed piece
 -- Note: we assume here that we validated earlier that the word fits
 insertWord :: MoveType -> String -> PlacedPiece -> PlayingField -> PlayingField
-insertWord Horizontal word (PlacedPiece c cs) pf = undefined
-insertWord Vertical   word (PlacedPiece c cs) pf = undefined
-  where
+insertWord mt word pp@(PlacedPiece c cs) pf =
+  let
     (prefix, _c:suffix) = break (== c) word
+  in case mt of
+    Horizontal -> insertString R suffix pp (insertString L (reverse prefix) pp pf)
+    Vertical   -> insertString Down suffix pp (insertString Up (reverse prefix) pp pf)
 
 removeWord :: String -> Bag -> Bag
-removeWord = undefined
+removeWord _ []   = error "Cannot remove a word from an empty bag."
+removeWord word bag = delete word bag
 
 -- get all placed pieces where a word could be attached, i.e.
 -- all pieces where either the x or the y-axis is still free
@@ -129,8 +133,7 @@ executeTurn pf bag = case matchingWords of
 main :: IO ()
 main = do
   let trie = foldl (flip insert) emptyTrie someWords
-      firstWord = head someWords
-      _remainingWords = tail someWords
+      (firstWord:remainingWords) = someWords
       playingField = placeFirstWord firstWord Map.empty
   putStrLn $ "A trie: " ++ show trie
   putStrLn $ "All prefixes: " ++ show (allPrefixes trie)
@@ -139,7 +142,7 @@ main = do
   writePlayingField "/tmp/shcrabble.svg" playingField
   -- putStrLn $ "Free neighbors: " ++ show (getAllFreeNeighbors playingField)
 
-  -- let (playingField', remainingWords') = executeTurn playingField remainingWords
-  -- writePlayingField "/tmp/shcrabble2.svg" playingField'
+  let (playingField', remainingWords') = executeTurn playingField remainingWords
+  writePlayingField "/tmp/shcrabble2.svg" playingField'
   -- putStrLn $ "remainingWords': " ++ show remainingWords'
 
