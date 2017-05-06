@@ -40,20 +40,6 @@ getNeighbors pf (x,y) = Map.map (\cs -> Map.lookup cs pf) neighborMap
     neighborCoordinates = [(L, (x-1, y)), (R, (x+1, y)), (Up, (x, y+1)), (Down, (x, y-1))]
     neighborMap = Map.fromList neighborCoordinates
 
--- getFreeNeighbors :: PlayingField -> Coordinates -> Map
--- getFreeNeighbors
-
--- getFreeNeighbors :: PlayingField -> Coordinates -> [(Coordinates, Bool)]
--- getFreeNeighbors pf (x,y) = neighbors
---   where
---     neighborCoordinates = [(x-1, y), (x+1, y), (x, y+1), (x, y-1)]
---     isFieldFree cs = Map.notMember cs pf
---     neighbors = map (\(d, cs) -> (cs, isFieldFree cs)) neighborCoordinates
-
-
--- getAllFreeNeighbors :: PlayingField -> [(Coordinates, Bool)]
--- getAllFreeNeighbors pf = concatMap (getFreeNeighbors pf) (Map.keys pf)
-
 -- find all words in the bag that could be attached to the given character
 getMatchingWords :: Bag -> PlacedPiece -> (PlacedPiece, [String])
 getMatchingWords [] pp                   = (pp, [])
@@ -165,7 +151,16 @@ removeWord word bag = delete word bag
 -- all pieces where either the x or the y-axis is still free
 -- TODO: Allow words to be extended?
 getAvailablePlacedPieces :: PlayingField -> [PlacedPiece]
-getAvailablePlacedPieces pf = Map.elems pf  -- TODO: Implement this properly
+getAvailablePlacedPieces pf = filter (not . (isPieceAvailable pf)) (Map.elems pf)
+
+-- a piece is available if either its left and right or upper and lower
+-- neigbors are free
+isPieceAvailable :: PlayingField -> PlacedPiece -> Bool
+isPieceAvailable pf (PlacedPiece c cs) = isVerticalFree || isHorizontalFree
+  where
+    neighbors = getNeighbors pf cs
+    isVerticalFree   = all (== Nothing) [Map.lookup Up neighbors, Map.lookup Down neighbors]
+    isHorizontalFree = all (== Nothing) [Map.lookup L neighbors, Map.lookup R neighbors]
 
 executeTurn :: PlayingField -> Bag -> Maybe (PlayingField, Bag)
 executeTurn pf []  = Nothing  -- end of the game
