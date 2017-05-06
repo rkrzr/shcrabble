@@ -3,9 +3,10 @@ module Main where
 import SVG
 import Trie
 import Types
+import Data.Ord (comparing)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
-import Data.List (delete)
+import Data.List (delete, sortBy)
 import Debug.Trace (trace, traceShowId)
 import System.Environment (getArgs)
 
@@ -154,7 +155,10 @@ readWordFile path = do
   let messyWords = concatMap words $ lines content
       cleanWords = map (filter (`elem` allowedCharacters)) messyWords
       longerWords = filter (\x -> length x > 1) cleanWords
-  return longerWords
+      -- Heuristic: We sort words from longest to shortest to maximize
+      -- the number of fields that other words can attach to
+      sortedWords = reverse $ sortBy (comparing length) longerWords
+  return sortedWords
 
 main :: IO ()
 main = do
@@ -170,6 +174,7 @@ main = do
       -- putStrLn $ "All prefixes: " ++ show (allPrefixes trie)
       -- putStrLn $ "The playing field: " ++ show playingField
       -- putStrLn $ generatePlayingFieldSVG playingField
+      putStrLn $ "allWords: " ++ show allWords
       writePlayingField "/tmp/shcrabble.svg" playingField
       -- putStrLn $ "Free neighbors: " ++ show (getAllFreeNeighbors playingField)
 
