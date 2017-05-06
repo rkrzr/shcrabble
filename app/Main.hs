@@ -59,9 +59,34 @@ getMatchingWords :: Bag -> PlacedPiece -> (PlacedPiece, [String])
 getMatchingWords [] pp                   = (pp, [])
 getMatchingWords xs pp@(PlacedPiece c _) = (pp, filter (elem c) xs)
 
+-- Note: We are generating all theoretical options here, they may not be possible
+-- in practice, if there are already different pieces on the playing field
+getHorizontalPlacements' :: String -> String -> PlacedPiece -> [[PlacedPiece]]
+getHorizontalPlacements' prefix [] pp@(PlacedPiece c cs) = []
+getHorizontalPlacements' prefix (x:xs) pp@(PlacedPiece c cs) = case x == c of
+  -- skip characters that don't match
+  False -> getHorizontalPlacements' (prefix ++ [x]) xs pp
+  -- place the prefix to the left and the suffix to the right of (x,y)
+  True  -> let pps = placeString L prefix pp ++ [pp] ++ placeString R xs pp
+           in pps : getHorizontalPlacements' (prefix ++ [x]) xs pp
+
+getHorizontalPlacements :: String -> PlayingField -> PlacedPiece -> [[PlacedPiece]]
+getHorizontalPlacements word pf pp = getHorizontalPlacements' [] word pp
+
+-- we place words either from left to right or from top to bottom
+getPlacement :: String -> PlacedPiece -> Char -> [PlacedPiece]
+getPlacement word pp char = undefined
+
+-- For the given word, return *all* possible placements given the contraints of the playing field
+getFittingWords :: PlayingField -> PlacedPiece -> String -> (PlacedPiece, [PlacedPiece])
+getFittingWords pf pp [] = (pp, [])
+getFittingWords pf pp word = (pp, possiblePlacements)
+  where
+    possiblePlacements = concatMap (getPlacement word pp) word
+
 -- check if the given word does not touch or intersect with other pieces
-isWordFitting :: PlacedPiece -> [PlacedPiece] -> PlayingField -> Bool
-isWordFitting pp pps pf = undefined
+isWordFitting :: PlayingField -> PlacedPiece -> [PlacedPiece] -> Bool
+isWordFitting pf pp pps = undefined
 
 -- It's often possible to attach a word in several ways to a given piece
 -- think e.g. about words that contain the character of the placed piece several times
@@ -96,6 +121,14 @@ goOne Up   (x,y) = (x, y+1)
 goOne Down (x,y) = (x, y-1)
 goOne L    (x,y) = (x-1, y)
 goOne R    (x,y) = (x+1, y)
+
+-- TODO: Use this function in insertString
+placeString :: Direction -> String -> PlacedPiece -> [PlacedPiece]
+placeString _ [] _ = []
+placeString d (w:ws) (PlacedPiece c cs) = pp' : placeString d ws pp'
+  where
+    cs' = goOne d cs
+    pp' = PlacedPiece w cs'
 
 -- insert a string in the given direction starting from the given placed piece
 insertString :: Direction -> String -> PlacedPiece -> PlayingField -> PlayingField
@@ -139,7 +172,7 @@ executeTurn pf bag = case matchingWords of
 
     matchingWords :: [(PlacedPiece, [String])]
     matchingWords = filter (\(_, ws) -> ws /= []) $ map (getMatchingWords bag) availablePlacedPieces
-    -- _fittingWords = filter isWordFitting matchingWords
+    -- fittingWords = filter (isWordFitting pf) matchingWords
 
 executeGame :: PlayingField -> Bag -> IO PlayingField
 executeGame pf []  = return pf
