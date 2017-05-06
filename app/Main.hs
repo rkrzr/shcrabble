@@ -61,37 +61,44 @@ getMatchingWords xs pp@(PlacedPiece c _) = (pp, filter (elem c) xs)
 
 -- Note: We are generating all theoretical options here, they may not be possible
 -- in practice, if there are already different pieces on the playing field
-getHorizontalPlacements' :: String -> String -> PlacedPiece -> [[PlacedPiece]]
-getHorizontalPlacements' prefix [] pp@(PlacedPiece c cs) = []
-getHorizontalPlacements' prefix (x:xs) pp@(PlacedPiece c cs) = case x == c of
+getDirectonalPlacements' :: String -> String -> MoveType -> PlacedPiece -> [[PlacedPiece]]
+getDirectonalPlacements' prefix [] mt pp@(PlacedPiece c cs) = []
+getDirectonalPlacements' prefix (x:xs) mt pp@(PlacedPiece c cs) = case x == c of
   -- skip characters that don't match
-  False -> getHorizontalPlacements' (prefix ++ [x]) xs pp
+  False -> getDirectonalPlacements' (prefix ++ [x]) xs mt pp
   -- place the prefix to the left and the suffix to the right of (x,y)
-  True  -> let pps = placeString L prefix pp ++ [pp] ++ placeString R xs pp
-           in pps : getHorizontalPlacements' (prefix ++ [x]) xs pp
+  True  -> case mt of
+    Horizontal -> let pps = placeString L prefix pp ++ [pp] ++ placeString R xs pp
+                  in pps : getDirectonalPlacements' (prefix ++ [x]) xs mt pp
+    Vertical   -> let pps = placeString Up prefix pp ++ [pp] ++ placeString Down xs pp
+                  in pps : getDirectonalPlacements' (prefix ++ [x]) xs mt pp
 
-getHorizontalPlacements :: String -> PlayingField -> PlacedPiece -> [[PlacedPiece]]
-getHorizontalPlacements word pf pp = getHorizontalPlacements' [] word pp
-
--- we place words either from left to right or from top to bottom
-getPlacement :: String -> PlacedPiece -> Char -> [PlacedPiece]
-getPlacement word pp char = undefined
+getDirectonalPlacements :: String -> MoveType -> PlacedPiece -> [[PlacedPiece]]
+getDirectonalPlacements word mt pp = getDirectonalPlacements' [] word mt pp
 
 -- For the given word, return *all* possible placements given the contraints of the playing field
-getFittingWords :: PlayingField -> PlacedPiece -> String -> (PlacedPiece, [PlacedPiece])
-getFittingWords pf pp [] = (pp, [])
-getFittingWords pf pp word = (pp, possiblePlacements)
+getFittingWords :: PlayingField -> PlacedPiece -> String -> (PlacedPiece, [[PlacedPiece]])
+getFittingWords pf pp []   = (pp, [])
+getFittingWords pf pp word = (pp, fittingPlacements)
   where
-    possiblePlacements = concatMap (getPlacement word pp) word
+    possiblePlacements = getAllPossiblePlacements word pp
+    fittingPlacements = filter (isWordFitting pf) possiblePlacements
 
--- check if the given word does not touch or intersect with other pieces
-isWordFitting :: PlayingField -> PlacedPiece -> [PlacedPiece] -> Bool
-isWordFitting pf pp pps = undefined
+-- check if the given word does not touch or overlap with conflicting pieces
+isWordFitting :: PlayingField -> [PlacedPiece] -> Bool
+isWordFitting pf []  = True
+isWordFitting pf pps = all isEqualOrEmpty pps
+  where
+    -- TODO: Check also all surrounding pieces (they must not touch)
+    isEqualOrEmpty (PlacedPiece c cs) = case Map.lookup cs pf of
+      Nothing                   -> True
+      Just (PlacedPiece c' cs') -> c == c'
 
 -- It's often possible to attach a word in several ways to a given piece
 -- think e.g. about words that contain the character of the placed piece several times
 getAllPossiblePlacements :: String -> PlacedPiece -> [[PlacedPiece]]
-getAllPossiblePlacements word pp = undefined
+getAllPossiblePlacements word pp =
+  getDirectonalPlacements word Horizontal pp ++ getDirectonalPlacements word Vertical pp
 
 -- Note: We only allow *either* a vertical *or* a horizontal move for now
 determineFreeDirection :: PlacedPiece -> PlayingField -> Maybe MoveType
