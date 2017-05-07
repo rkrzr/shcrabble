@@ -177,12 +177,17 @@ executeTurn pf bag = case matchingWords of
     -- fittingWords = filter (isWordFitting pf) matchingWords
 
 executeGame :: PlayingField -> Bag -> IO PlayingField
-executeGame pf []  = return pf
-executeGame pf bag = do
+executeGame pf bag = executeGame' 1 pf bag
+
+executeGame' :: Int -> PlayingField -> Bag -> IO PlayingField
+executeGame' _ pf []  = return pf
+executeGame' turn pf bag  = do
+  let filePath = "/tmp/shcrabble_" ++ show turn ++ ".svg"
+  writePlayingField filePath pf
   let maybeEndOfGame = executeTurn pf bag
   case maybeEndOfGame of
     Nothing          -> putStrLn "The End." >> return pf
-    Just (pf', bag') -> executeGame pf' bag'
+    Just (pf', bag') -> executeGame' (turn + 1) pf' bag'
 
 readWordFile :: FilePath -> IO [String]
 readWordFile path = do
@@ -210,11 +215,10 @@ main = do
       -- putStrLn $ "The playing field: " ++ show playingField
       -- putStrLn $ generatePlayingFieldSVG playingField
       putStrLn $ "allWords: " ++ show allWords
-      writePlayingField "/tmp/shcrabble.svg" playingField
+      -- writePlayingField "/tmp/shcrabble.svg" playingField
       -- putStrLn $ "Free neighbors: " ++ show (getAllFreeNeighbors playingField)
 
-      -- let (playingField', remainingWords') = executeTurn playingField remainingWords
       playingField' <- executeGame playingField remainingWords
-      writePlayingField "/tmp/shcrabble2.svg" playingField'
+      writePlayingField "/tmp/shcrabble_final.svg" playingField'
       -- putStrLn $ "remainingWords': " ++ show remainingWords'
 
