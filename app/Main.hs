@@ -44,6 +44,11 @@ getMatchingWords :: Bag -> PlacedPiece -> (PlacedPiece, [String])
 getMatchingWords [] pp                   = (pp, [])
 getMatchingWords xs pp@(PlacedPiece c _) = (pp, filter (elem c) xs)
 
+
+getDirectonalPlacements :: String -> MoveType -> PlacedPiece -> [[PlacedPiece]]
+getDirectonalPlacements word mt pp = getDirectonalPlacements' [] word mt pp
+
+
 -- Note: We are generating all theoretical options here, they may not be possible
 -- in practice, if there are already different pieces on the playing field
 getDirectonalPlacements' :: String -> String -> MoveType -> PlacedPiece -> [[PlacedPiece]]
@@ -59,8 +64,6 @@ getDirectonalPlacements' prefix (x:xs) mt pp@(PlacedPiece c cs) = case x == c of
     Vertical   -> let pps = placeString Down (reverse prefix) pp ++ [pp] ++ placeString Up xs pp
                   in pps : getDirectonalPlacements' (prefix ++ [x]) xs mt pp
 
-getDirectonalPlacements :: String -> MoveType -> PlacedPiece -> [[PlacedPiece]]
-getDirectonalPlacements word mt pp = getDirectonalPlacements' [] word mt pp
 
 -- For the given word, return *all* possible placements given the contraints of the playing field
 getFittingWords :: PlayingField -> PlacedPiece -> String -> (PlacedPiece, [[PlacedPiece]])
@@ -70,19 +73,27 @@ getFittingWords pf pp word = (pp, map snd fittingPlacements)
     possiblePlacements = getAllPossiblePlacements word pp
     fittingPlacements = filter (isWordFitting pf) possiblePlacements
 
+
 -- check if the given word does not touch or overlap with conflicting pieces
 isWordFitting :: PlayingField -> (MoveType, [PlacedPiece]) -> Bool
 isWordFitting pf (_, [])   = True
-isWordFitting pf (mt, pps) = all isEqualOrEmpty pps
+isWordFitting pf (mt, pps) = all (isEqualOrEmpty pf mt) pps
+
+
+isEqualOrEmpty :: PlayingField -> MoveType -> PlacedPiece -> Bool
+isEqualOrEmpty pf mt (PlacedPiece c cs) = case Map.lookup cs pf of
+  Nothing -> case mt of
+    -- TODO: Check if first and last char touch somewhere
+    Horizontal -> emptyNeighbors [Up, Down]
+    Vertical   -> emptyNeighbors [L, R]
+  Just (PlacedPiece c' cs') -> case mt of
+    Horizontal -> c == c' && emptyNeighbors [L, R]
+    Vertical   -> c == c' && emptyNeighbors [Up, Down]
   where
-    -- TODO: Check also all surrounding pieces (they must not touch)
-    isEqualOrEmpty (PlacedPiece c cs) = case Map.lookup cs pf of
-      Nothing -> let neighbors = getNeighbors pf cs in
-                 case mt of
-                   -- TODO: Check if first and last char touch somewhere
-                   Horizontal -> all null $ map (\d -> fromJust (Map.lookup d neighbors)) [Up, Down]
-                   Vertical   -> all null $ map (\d -> fromJust (Map.lookup d neighbors)) [L, R]
-      Just (PlacedPiece c' cs') -> c == c'
+    neighbors = getNeighbors pf cs
+    -- check if the neighbors in the given directions are all empty
+    emptyNeighbors ds = all null $ map (\d -> fromJust (Map.lookup d neighbors)) ds
+
 
 -- It's often possible to attach a word in several ways to a given piece
 -- think e.g. about words that contain the character of the placed piece several times
