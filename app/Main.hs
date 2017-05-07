@@ -51,11 +51,11 @@ getDirectonalPlacements' prefix [] mt pp@(PlacedPiece c cs) = []
 getDirectonalPlacements' prefix (x:xs) mt pp@(PlacedPiece c cs) = case x == c of
   -- skip characters that don't match
   False -> getDirectonalPlacements' (prefix ++ [x]) xs mt pp
-  -- place the prefix to the left and the suffix to the right of (x,y)
   True  -> case mt of
-    Horizontal -> let pps = placeString L prefix pp ++ [pp] ++ placeString R xs pp
+    -- place the prefix to the left and the suffix to the right of (x,y)
+    Horizontal -> let pps = placeString L (reverse prefix) pp ++ [pp] ++ placeString R xs pp
                   in pps : getDirectonalPlacements' (prefix ++ [x]) xs mt pp
-                  -- Note: Down is Up and Up is Down, thanks to SVGs weird coordinate system
+                  -- Note: Down is Up and Up is Down, thanks to SVG's weird coordinate system
     Vertical   -> let pps = placeString Down (reverse prefix) pp ++ [pp] ++ placeString Up xs pp
                   in pps : getDirectonalPlacements' (prefix ++ [x]) xs mt pp
 
@@ -65,26 +65,32 @@ getDirectonalPlacements word mt pp = getDirectonalPlacements' [] word mt pp
 -- For the given word, return *all* possible placements given the contraints of the playing field
 getFittingWords :: PlayingField -> PlacedPiece -> String -> (PlacedPiece, [[PlacedPiece]])
 getFittingWords pf pp []   = (pp, [])
-getFittingWords pf pp word = (pp, fittingPlacements)
+getFittingWords pf pp word = (pp, map snd fittingPlacements)
   where
     possiblePlacements = getAllPossiblePlacements word pp
     fittingPlacements = filter (isWordFitting pf) possiblePlacements
 
 -- check if the given word does not touch or overlap with conflicting pieces
-isWordFitting :: PlayingField -> [PlacedPiece] -> Bool
-isWordFitting pf []  = True
-isWordFitting pf pps = all isEqualOrEmpty pps
+isWordFitting :: PlayingField -> (MoveType, [PlacedPiece]) -> Bool
+isWordFitting pf (_, [])   = True
+isWordFitting pf (mt, pps) = all isEqualOrEmpty pps
   where
     -- TODO: Check also all surrounding pieces (they must not touch)
     isEqualOrEmpty (PlacedPiece c cs) = case Map.lookup cs pf of
-      Nothing                   -> True
+      Nothing -> let neighbors = getNeighbors pf cs in
+                 case mt of
+                   -- TODO: Check if first and last char touch somewhere
+                   Horizontal -> all null $ map (\d -> fromJust (Map.lookup d neighbors)) [Up, Down]
+                   Vertical   -> all null $ map (\d -> fromJust (Map.lookup d neighbors)) [L, R]
       Just (PlacedPiece c' cs') -> c == c'
 
 -- It's often possible to attach a word in several ways to a given piece
 -- think e.g. about words that contain the character of the placed piece several times
-getAllPossiblePlacements :: String -> PlacedPiece -> [[PlacedPiece]]
-getAllPossiblePlacements word pp =
-  getDirectonalPlacements word Horizontal pp ++ getDirectonalPlacements word Vertical pp
+getAllPossiblePlacements :: String -> PlacedPiece -> [(MoveType, [PlacedPiece])]
+getAllPossiblePlacements word pp = horizontalPlacements ++ verticalPlacements
+  where
+    horizontalPlacements = zip (repeat Horizontal) $ getDirectonalPlacements word Horizontal pp
+    verticalPlacements   = zip (repeat Vertical) $ getDirectonalPlacements word Vertical pp
 
 
 goOne :: Direction -> Coordinates -> Coordinates
@@ -166,6 +172,7 @@ readWordFile path = do
       -- the number of fields that other words can attach to
       sortedWords = reverse $ sortBy (comparing length) longerWords
   return sortedWords
+
 
 main :: IO ()
 main = do
