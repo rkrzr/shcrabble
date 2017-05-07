@@ -11,34 +11,33 @@ import Debug.Trace (trace, traceShowId)
 import System.Environment (getArgs)
 
 
-someWords :: [String]
-someWords = ["just", "some", "random", "words", "without", "meaning"]
-
 lowerAlphabet = ['a' .. 'z']
 upperAlphabet = ['A' .. 'Z']
 allowedCharacters = lowerAlphabet ++ upperAlphabet
 
-allDirections :: [Direction]
-allDirections = [L ..]
-
-placeFirstWord' :: String -> PlayingField -> Coordinates -> PlayingField
-placeFirstWord' [] pf _         = pf
-placeFirstWord' (z:zs) pf cs@(x,y) = placeFirstWord' zs newPlayingField (x+1, y)
-  where newPlayingField = Map.insert cs (PlacedPiece z cs) pf
 
 -- we always place the first word starting from (1,1) to the right
 placeFirstWord :: String -> PlayingField -> PlayingField
 placeFirstWord [] pf = pf
 placeFirstWord xs pf = placeFirstWord' xs pf (1,1)
 
+
+placeFirstWord' :: String -> PlayingField -> Coordinates -> PlayingField
+placeFirstWord' [] pf _         = pf
+placeFirstWord' (z:zs) pf cs@(x,y) = placeFirstWord' zs newPlayingField (x+1, y)
+  where newPlayingField = Map.insert cs (PlacedPiece z cs) pf
+
+
 writePlayingField :: FilePath -> PlayingField -> IO ()
 writePlayingField filePath pf = writeFile filePath (generatePlayingFieldSVG pf)
+
 
 getNeighbors :: PlayingField -> Coordinates -> Map.Map Direction (Maybe PlacedPiece)
 getNeighbors pf (x,y) = Map.map (\cs -> Map.lookup cs pf) neighborMap
   where
     neighborCoordinates = [(L, (x-1, y)), (R, (x+1, y)), (Up, (x, y+1)), (Down, (x, y-1))]
     neighborMap = Map.fromList neighborCoordinates
+
 
 -- find all words in the bag that could be attached to the given character
 getMatchingWords :: Bag -> PlacedPiece -> (PlacedPiece, [String])
@@ -56,7 +55,8 @@ getDirectonalPlacements' prefix (x:xs) mt pp@(PlacedPiece c cs) = case x == c of
   True  -> case mt of
     Horizontal -> let pps = placeString L prefix pp ++ [pp] ++ placeString R xs pp
                   in pps : getDirectonalPlacements' (prefix ++ [x]) xs mt pp
-    Vertical   -> let pps = placeString Up prefix pp ++ [pp] ++ placeString Down xs pp
+                  -- Note: Down is Up and Up is Down, thanks to SVGs weird coordinate system
+    Vertical   -> let pps = placeString Down (reverse prefix) pp ++ [pp] ++ placeString Up xs pp
                   in pps : getDirectonalPlacements' (prefix ++ [x]) xs mt pp
 
 getDirectonalPlacements :: String -> MoveType -> PlacedPiece -> [[PlacedPiece]]
@@ -86,28 +86,6 @@ getAllPossiblePlacements :: String -> PlacedPiece -> [[PlacedPiece]]
 getAllPossiblePlacements word pp =
   getDirectonalPlacements word Horizontal pp ++ getDirectonalPlacements word Vertical pp
 
--- Note: We only allow *either* a vertical *or* a horizontal move for now
-determineFreeDirection :: PlacedPiece -> PlayingField -> Maybe MoveType
-determineFreeDirection (PlacedPiece c cs) pf = if isVerticalFree
-    then Just Vertical
-    else if isHorizontalFree
-      then Just Horizontal
-      else Nothing
-  where
-    neighbors = getNeighbors pf cs
-    verticalNeighbors   = map (\d -> fromJust (Map.lookup d neighbors)) [Up, Down]
-    horizontalNeighbors = map (\d -> fromJust (Map.lookup d neighbors)) [L, R]
-    isVerticalFree   = all (== Nothing) verticalNeighbors
-    isHorizontalFree = all (== Nothing) horizontalNeighbors
-
-placeWord :: String -> PlacedPiece -> PlayingField -> PlayingField
-placeWord [] pp pf = pf
-placeWord word pp pf = case determineFreeDirection pp pf of
-    Just Horizontal -> insertWord Horizontal word pp pf
-    Just Vertical   -> insertWord Vertical word pp pf
-    -- TODO: Don't use trace here.
-    -- TODO: Retry the skipped word later?
-    Nothing         -> trace ("Skipping the word \"" ++ word ++ "\". There is no free spot.") pf
 
 goOne :: Direction -> Coordinates -> Coordinates
 goOne Up   (x,y) = (x, y+1)
@@ -115,7 +93,7 @@ goOne Down (x,y) = (x, y-1)
 goOne L    (x,y) = (x-1, y)
 goOne R    (x,y) = (x+1, y)
 
--- TODO: Use this function in insertString
+
 placeString :: Direction -> String -> PlacedPiece -> [PlacedPiece]
 placeString _ [] _ = []
 placeString d (w:ws) (PlacedPiece c cs) = pp' : placeString d ws pp'
@@ -123,29 +101,6 @@ placeString d (w:ws) (PlacedPiece c cs) = pp' : placeString d ws pp'
     cs' = goOne d cs
     pp' = PlacedPiece w cs'
 
--- insert a string in the given direction starting from the given placed piece
-insertString :: Direction -> String -> PlacedPiece -> PlayingField -> PlayingField
-insertString _ []     _                  pf = pf
-insertString d (w:ws) (PlacedPiece c cs) pf = insertString d ws pp' pf'
-  where
-    cs' = goOne d cs
-    pp' = PlacedPiece w cs'
-    pf' = Map.insert cs' pp' pf
-
--- insert a word at or around the given placed piece
--- Note: we assume here that we validated earlier that the word fits
-insertWord :: MoveType -> String -> PlacedPiece -> PlayingField -> PlayingField
-insertWord mt word pp@(PlacedPiece c cs) pf =
-  let
-    (prefix, _c:suffix) = break (== c) word
-  in case mt of
-    Horizontal -> insertString R suffix pp (insertString L (reverse prefix) pp pf)
-    -- Note: SVG spans coordindates to the right and down...
-    Vertical   -> insertString Up suffix pp (insertString Down (reverse prefix) pp pf)
-
-removeWord :: String -> Bag -> Bag
-removeWord _ []   = error "Cannot remove a word from an empty bag."
-removeWord word bag = delete word bag
 
 -- get all placed pieces where a word could be attached, i.e.
 -- all pieces where either the x or the y-axis is still free
@@ -162,22 +117,33 @@ isPieceAvailable pf (PlacedPiece c cs) = isVerticalFree || isHorizontalFree
     isVerticalFree   = all (== Nothing) [Map.lookup Up neighbors, Map.lookup Down neighbors]
     isHorizontalFree = all (== Nothing) [Map.lookup L neighbors, Map.lookup R neighbors]
 
+
 executeTurn :: PlayingField -> Bag -> Maybe (PlayingField, Bag)
-executeTurn pf []  = Nothing  -- end of the game
-executeTurn pf bag = case matchingWords of
-    []           -> trace "No more words can be played." Nothing
-    ((_, []): _) -> error "Should not happen. We filter this out earlier."
-    ((pp, (word:words)):ws) -> Just (placeWord (traceShowId word) pp pf, removeWord word bag)
+executeTurn pf []      = Nothing  -- end of the game
+executeTurn pf (w:ws)  = case viablePlacementOptions w of
+  [] -> executeTurn pf ws  -- try the next word in the bag
+  -- we simply pick the first viable placement option for a word
+  -- this could be tuned later
+  ((pp, (pps:_)):xs) -> Just (insertPlacedPieces pps pf, ws)
   where
     -- all placed pieces where a word could be attached
     availablePlacedPieces = getAvailablePlacedPieces pf
+    allPlacementOptions w = map (\pp -> getFittingWords pf pp w) availablePlacedPieces
+    viablePlacementOptions w = filter (\(pp, pps) -> not (null pps)) (allPlacementOptions w)
 
-    matchingWords :: [(PlacedPiece, [String])]
-    matchingWords = filter (\(_, ws) -> ws /= []) $ map (getMatchingWords bag) availablePlacedPieces
-    -- fittingWords = filter (isWordFitting pf) matchingWords
+
+insertPlacedPieces :: [PlacedPiece] -> PlayingField -> PlayingField
+insertPlacedPieces [] pf = pf
+insertPlacedPieces (pp@(PlacedPiece c cs):pps) pf = case Map.lookup cs pf of
+  Nothing  -> insertPlacedPieces pps (Map.insert cs pp pf)
+  Just pp' -> case pp == pp' of
+    True  -> insertPlacedPieces pps (Map.insert cs pp pf)
+    False -> error $ "The given piece " ++ show pp ++ " is invalid. " ++ show pp'
+
 
 executeGame :: PlayingField -> Bag -> IO PlayingField
 executeGame pf bag = executeGame' 1 pf bag
+
 
 executeGame' :: Int -> PlayingField -> Bag -> IO PlayingField
 executeGame' _ pf []  = return pf
@@ -188,6 +154,7 @@ executeGame' turn pf bag  = do
   case maybeEndOfGame of
     Nothing          -> putStrLn "The End." >> return pf
     Just (pf', bag') -> executeGame' (turn + 1) pf' bag'
+
 
 readWordFile :: FilePath -> IO [String]
 readWordFile path = do
