@@ -78,31 +78,21 @@ getFittingWords pf pp word = (pp, map snd fittingPlacements)
 -- check if the given word does not touch or overlap with conflicting pieces
 isWordFitting :: PlayingField -> (MoveType, [PlacedPiece]) -> Bool
 isWordFitting pf (_, [])   = True
-isWordFitting pf (Horizontal, ((PlacedPiece c cs):pps)) =
-  isFirstValid && (all (isEqualOrEmpty pf Horizontal) (init pps)) && isLastValid
+isWordFitting pf (mt, (pp@(PlacedPiece c cs):pps)) =
+  isFirstValid && (all (isEqualOrEmpty pf mt) (init pps)) && isLastValid
   where
     -- Note: If the field is empty, then all three surrounding fields must be empty
-    -- If the field is not empty, then only the field below it must be empty
-    isFirstValid = case Map.lookup cs pf of
-      Just (PlacedPiece c' cs') -> c == c' && emptyNeighbors cs [L] pf
-      Nothing                   -> emptyNeighbors cs [Up, Down, L] pf
-    lastCoordinates = ppCoordinates (last pps)
-    isLastValid = case Map.lookup lastCoordinates pf of
-      Just (PlacedPiece c' cs') -> c == c' && emptyNeighbors lastCoordinates [R] pf
-      Nothing                   -> emptyNeighbors lastCoordinates [Up, Down, R] pf
-isWordFitting pf (Vertical, ((PlacedPiece c cs):pps)) =
-  isFirstValid && (all (isEqualOrEmpty pf Vertical) (init pps)) && isLastValid
-  where
-    isFirstValid = case Map.lookup cs pf of
-      Just (PlacedPiece c' cs') -> c == c' && emptyNeighbors cs [Down] pf
-      Nothing                   -> emptyNeighbors cs [L, R, Down] pf
-    lastCoordinates = ppCoordinates (last pps)
-    isLastValid  = case Map.lookup lastCoordinates pf of
-      Just (PlacedPiece c' cs') -> c == c' && emptyNeighbors lastCoordinates [Up] pf
-      Nothing                   -> emptyNeighbors lastCoordinates [L, R, Up] pf
+    -- If the field is not empty, then only the field in the same direction must be empty
+    isFieldValid (PlacedPiece c cs) d ds = case Map.lookup cs pf of
+      Just (PlacedPiece c' cs') -> c == c' && isNeighborEmpty cs pf d
+      Nothing                   -> emptyNeighbors cs ds pf
+    isFirstValid = case mt of
+      Horizontal -> isFieldValid pp L [Up, Down, L]
+      Vertical   -> isFieldValid pp Down [L, R, Down]
+    isLastValid  = case mt of
+      Horizontal -> isFieldValid (last pps) R [Up, Down, R]
+      Vertical   -> isFieldValid (last pps) Up [L, R, Up]
 
-isFieldEmpty :: PlayingField -> Coordinates -> Bool
-isFieldEmpty pf cs = Map.notMember cs pf
 
 isEqualOrEmpty :: PlayingField -> MoveType -> PlacedPiece -> Bool
 isEqualOrEmpty pf mt (PlacedPiece c cs) = case Map.lookup cs pf of
