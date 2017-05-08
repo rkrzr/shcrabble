@@ -78,19 +78,31 @@ getFittingWords pf pp word = (pp, map snd fittingPlacements)
 -- check if the given word does not touch or overlap with conflicting pieces
 isWordFitting :: PlayingField -> (MoveType, [PlacedPiece]) -> Bool
 isWordFitting pf (_, [])   = True
-isWordFitting pf (Horizontal, (pp:pps)) =
+isWordFitting pf (Horizontal, ((PlacedPiece c cs):pps)) =
   isFirstValid && (all (isEqualOrEmpty pf Horizontal) (init pps)) && isLastValid
   where
     -- Note: If the field is empty, then all three surrounding fields must be empty
     -- If the field is not empty, then only the field below it must be empty
-    isFirstValid = emptyNeighbors (ppCoordinates pp) [L] pf
-    isLastValid  = emptyNeighbors (ppCoordinates (last pps)) [R] pf
-isWordFitting pf (Vertical, (pp:pps))   =
+    isFirstValid = case isFieldEmpty pf cs of
+      False -> emptyNeighbors cs [L] pf
+      True  -> emptyNeighbors cs [Up, Down, L] pf
+    lastCoordinates = ppCoordinates (last pps)
+    isLastValid = case isFieldEmpty pf lastCoordinates of
+      False -> emptyNeighbors lastCoordinates [R] pf
+      True  -> emptyNeighbors lastCoordinates [Up, Down, R] pf
+isWordFitting pf (Vertical, ((PlacedPiece c cs):pps))   =
   isFirstValid && (all (isEqualOrEmpty pf Vertical) (init pps)) && isLastValid
   where
-    isFirstValid = emptyNeighbors (ppCoordinates pp) [Down] pf
-    isLastValid  = emptyNeighbors (ppCoordinates (last pps)) [Up] pf
+    isFirstValid = case isFieldEmpty pf cs of
+      False -> emptyNeighbors cs [Down] pf
+      True  -> emptyNeighbors cs [L, R, Down] pf
+    lastCoordinates = ppCoordinates (last pps)
+    isLastValid  = case isFieldEmpty pf lastCoordinates of
+      False -> emptyNeighbors lastCoordinates [Up] pf
+      True  -> emptyNeighbors lastCoordinates [L, R, Up] pf
 
+isFieldEmpty :: PlayingField -> Coordinates -> Bool
+isFieldEmpty pf cs = Map.notMember cs pf
 
 isEqualOrEmpty :: PlayingField -> MoveType -> PlacedPiece -> Bool
 isEqualOrEmpty pf mt (PlacedPiece c cs) = case Map.lookup cs pf of
