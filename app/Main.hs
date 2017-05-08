@@ -83,23 +83,23 @@ isWordFitting pf (Horizontal, ((PlacedPiece c cs):pps)) =
   where
     -- Note: If the field is empty, then all three surrounding fields must be empty
     -- If the field is not empty, then only the field below it must be empty
-    isFirstValid = case isFieldEmpty pf cs of
-      False -> emptyNeighbors cs [L] pf
-      True  -> emptyNeighbors cs [Up, Down, L] pf
+    isFirstValid = case Map.lookup cs pf of
+      Just (PlacedPiece c' cs') -> c == c' && emptyNeighbors cs [L] pf
+      Nothing                   -> emptyNeighbors cs [Up, Down, L] pf
     lastCoordinates = ppCoordinates (last pps)
-    isLastValid = case isFieldEmpty pf lastCoordinates of
-      False -> emptyNeighbors lastCoordinates [R] pf
-      True  -> emptyNeighbors lastCoordinates [Up, Down, R] pf
-isWordFitting pf (Vertical, ((PlacedPiece c cs):pps))   =
+    isLastValid = case Map.lookup lastCoordinates pf of
+      Just (PlacedPiece c' cs') -> c == c' && emptyNeighbors lastCoordinates [R] pf
+      Nothing                   -> emptyNeighbors lastCoordinates [Up, Down, R] pf
+isWordFitting pf (Vertical, ((PlacedPiece c cs):pps)) =
   isFirstValid && (all (isEqualOrEmpty pf Vertical) (init pps)) && isLastValid
   where
-    isFirstValid = case isFieldEmpty pf cs of
-      False -> emptyNeighbors cs [Down] pf
-      True  -> emptyNeighbors cs [L, R, Down] pf
+    isFirstValid = case Map.lookup cs pf of
+      Just (PlacedPiece c' cs') -> c == c' && emptyNeighbors cs [Down] pf
+      Nothing                   -> emptyNeighbors cs [L, R, Down] pf
     lastCoordinates = ppCoordinates (last pps)
-    isLastValid  = case isFieldEmpty pf lastCoordinates of
-      False -> emptyNeighbors lastCoordinates [Up] pf
-      True  -> emptyNeighbors lastCoordinates [L, R, Up] pf
+    isLastValid  = case Map.lookup lastCoordinates pf of
+      Just (PlacedPiece c' cs') -> c == c' && emptyNeighbors lastCoordinates [Up] pf
+      Nothing                   -> emptyNeighbors lastCoordinates [L, R, Up] pf
 
 isFieldEmpty :: PlayingField -> Coordinates -> Bool
 isFieldEmpty pf cs = Map.notMember cs pf
