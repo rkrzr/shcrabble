@@ -10,6 +10,7 @@ import Data.List (delete, sortBy)
 import Debug.Trace (trace, traceShowId)
 import System.Environment (getArgs)
 
+allDirections = [L ..]
 
 lowerAlphabet = ['a' .. 'z']
 upperAlphabet = ['A' .. 'Z']
@@ -77,22 +78,37 @@ getFittingWords pf pp word = (pp, map snd fittingPlacements)
 -- check if the given word does not touch or overlap with conflicting pieces
 isWordFitting :: PlayingField -> (MoveType, [PlacedPiece]) -> Bool
 isWordFitting pf (_, [])   = True
-isWordFitting pf (mt, pps) = all (isEqualOrEmpty pf mt) pps
+isWordFitting pf (Horizontal, (pp:pps)) =
+  isFirstValid && (all (isEqualOrEmpty pf Horizontal) (init pps)) && isLastValid
+  where
+    -- Note: If the field is empty, then all three surrounding fields must be empty
+    -- If the field is not empty, then only the field below it must be empty
+    isFirstValid = emptyNeighbors (ppCoordinates pp) [L] pf
+    isLastValid  = emptyNeighbors (ppCoordinates (last pps)) [R] pf
+isWordFitting pf (Vertical, (pp:pps))   =
+  isFirstValid && (all (isEqualOrEmpty pf Vertical) (init pps)) && isLastValid
+  where
+    isFirstValid = emptyNeighbors (ppCoordinates pp) [Down] pf
+    isLastValid  = emptyNeighbors (ppCoordinates (last pps)) [Up] pf
 
 
 isEqualOrEmpty :: PlayingField -> MoveType -> PlacedPiece -> Bool
 isEqualOrEmpty pf mt (PlacedPiece c cs) = case Map.lookup cs pf of
   Nothing -> case mt of
-    -- TODO: Check if first and last char touch somewhere
-    Horizontal -> emptyNeighbors [Up, Down]
-    Vertical   -> emptyNeighbors [L, R]
+    Horizontal -> emptyNeighbors cs [Up, Down] pf
+    Vertical   -> emptyNeighbors cs [L, R] pf
   Just (PlacedPiece c' cs') -> case mt of
-    Horizontal -> c == c' && emptyNeighbors [L, R]
-    Vertical   -> c == c' && emptyNeighbors [Up, Down]
-  where
-    neighbors = getNeighbors pf cs
-    -- check if the neighbors in the given directions are all empty
-    emptyNeighbors ds = all null $ map (\d -> fromJust (Map.lookup d neighbors)) ds
+    Horizontal -> c == c' && emptyNeighbors cs' [L, R] pf
+    Vertical   -> c == c' && emptyNeighbors cs' [Up, Down] pf
+
+
+-- check if the neighbors in the given directions are all empty
+emptyNeighbors :: Coordinates -> [Direction] -> PlayingField -> Bool
+emptyNeighbors cs ds pf = all (== True) $ map (isNeighborEmpty cs pf) ds
+
+
+isNeighborEmpty :: Coordinates -> PlayingField -> Direction -> Bool
+isNeighborEmpty cs pf d = Map.notMember (goOne d cs) pf
 
 
 -- It's often possible to attach a word in several ways to a given piece
