@@ -106,7 +106,7 @@ isEqualOrEmpty pf mt (PlacedPiece c cs) = case Map.lookup cs pf of
 
 -- check if the neighbors in the given directions are all empty
 emptyNeighbors :: Coordinates -> [Direction] -> PlayingField -> Bool
-emptyNeighbors cs ds pf = all (== True) $ map (isNeighborEmpty cs pf) ds
+emptyNeighbors cs ds pf = all (isNeighborEmpty cs pf) ds
 
 
 isNeighborEmpty :: Coordinates -> PlayingField -> Direction -> Bool
@@ -156,16 +156,16 @@ isPieceAvailable pf (PlacedPiece c cs) = isVerticalFree || isHorizontalFree
 executeTurn :: PlayingField -> Bag -> Maybe (PlayingField, Bag)
 executeTurn pf [] = Nothing  -- end of the game
 executeTurn pf ws = case sortedPlacements of
-  []      -> error "End of the game"
+  []           -> Nothing
   ((w, pps):_) -> Just (insertPlacedPieces pps pf, delete w ws)
   where
     -- all placed pieces where a word could be attached
     availablePlacedPieces = getAvailablePlacedPieces pf
     wordsAndPieces = [(w, pp) | w <- ws, pp <- availablePlacedPieces]
-
     allPlacementOptions = concatMap (\(w, pp) -> getAllPlacementOptions w pf pp) wordsAndPieces
+    viablePlacementOptions = filter (\(w, pps) -> not (null pps)) allPlacementOptions
     -- find the placement the closest to the center of the playing field
-    sortedPlacements = sortBy (\(w1, pps1) (w2, pps2) -> comparing avgDistanceToMiddle pps1 pps2) allPlacementOptions
+    sortedPlacements = sortBy (\(w1, pps1) (w2, pps2) -> comparing avgDistanceToMiddle pps1 pps2) viablePlacementOptions
 
 
 -- find all possible placements for the given word and the given placed piece
@@ -185,7 +185,6 @@ getAllPlacementOptions w pf pp = map (\pps -> (w, pps)) $ getFittingWords pf w p
 --     availablePlacedPieces = getAvailablePlacedPieces pf
 --     allPlacementOptions w = map (\pp -> getFittingWords pf pp w) availablePlacedPieces
 --     viablePlacementOptions w = filter (\(pp, pps) -> not (null pps)) (allPlacementOptions w)
---     -- bestPlacementOption = map (\(pp, pps) -> avgDistanceToMiddle pps) viablePlacementOptions
 
 
 distanceToMiddle :: PlacedPiece -> Double
