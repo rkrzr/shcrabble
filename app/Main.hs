@@ -6,7 +6,7 @@ import Types
 import Data.Ord (comparing)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
-import Data.List (delete, sortBy)
+import Data.List (delete, minimumBy, sortBy)
 import Debug.Trace (trace, traceShowId)
 import System.Environment (getArgs)
 
@@ -67,9 +67,9 @@ getDirectonalPlacements' prefix (x:xs) mt pp@(PlacedPiece c cs) = case x == c of
 
 
 -- For the given word, return *all* possible placements given the contraints of the playing field
-getFittingWords :: PlayingField -> PlacedPiece -> String -> (PlacedPiece, [[PlacedPiece]])
-getFittingWords pf pp []   = (pp, [])
-getFittingWords pf pp word = (pp, map snd fittingPlacements)
+getFittingWords :: PlayingField -> String -> PlacedPiece -> [[PlacedPiece]]
+getFittingWords pf [] pp = []
+getFittingWords pf word pp = map snd fittingPlacements
   where
     possiblePlacements = getAllPossiblePlacements word pp
     fittingPlacements = filter (isWordFitting pf) possiblePlacements
@@ -154,17 +154,38 @@ isPieceAvailable pf (PlacedPiece c cs) = isVerticalFree || isHorizontalFree
 
 
 executeTurn :: PlayingField -> Bag -> Maybe (PlayingField, Bag)
-executeTurn pf []      = Nothing  -- end of the game
-executeTurn pf (w:ws)  = case viablePlacementOptions w of
-  [] -> executeTurn pf ws  -- try the next word in the bag
-  -- we simply pick the first viable placement option for a word
-  -- this could be tuned later
-  ((pp, (pps:_)):xs) -> Just (insertPlacedPieces pps pf, ws)
+executeTurn pf [] = Nothing  -- end of the game
+executeTurn pf ws = case sortedPlacements of
+  []      -> error "End of the game"
+  ((w, pps):_) -> Just (insertPlacedPieces pps pf, delete w ws)
   where
     -- all placed pieces where a word could be attached
     availablePlacedPieces = getAvailablePlacedPieces pf
-    allPlacementOptions w = map (\pp -> getFittingWords pf pp w) availablePlacedPieces
-    viablePlacementOptions w = filter (\(pp, pps) -> not (null pps)) (allPlacementOptions w)
+    wordsAndPieces = [(w, pp) | w <- ws, pp <- availablePlacedPieces]
+
+    allPlacementOptions = concatMap (\(w, pp) -> getAllPlacementOptions w pf pp) wordsAndPieces
+    -- find the placement the closest to the center of the playing field
+    sortedPlacements = sortBy (\(w1, pps1) (w2, pps2) -> comparing avgDistanceToMiddle pps1 pps2) allPlacementOptions
+
+
+-- find all possible placements for the given word and the given placed piece
+getAllPlacementOptions :: String -> PlayingField -> PlacedPiece -> [(String, [PlacedPiece])]
+getAllPlacementOptions w pf pp = map (\pps -> (w, pps)) $ getFittingWords pf w pp
+
+
+-- executeTurn :: PlayingField -> Bag -> Maybe (PlayingField, Bag)
+-- executeTurn pf []      = Nothing  -- end of the game
+-- executeTurn pf (w:ws)  = case viablePlacementOptions w of
+--   [] -> executeTurn pf ws  -- try the next word in the bag
+--   -- we simply pick the first viable placement option for a word
+--   -- this could be tuned later
+--   ((pp, (pps:_)):xs) -> Just (insertPlacedPieces pps pf, ws)
+--   where
+--     -- all placed pieces where a word could be attached
+--     availablePlacedPieces = getAvailablePlacedPieces pf
+--     allPlacementOptions w = map (\pp -> getFittingWords pf pp w) availablePlacedPieces
+--     viablePlacementOptions w = filter (\(pp, pps) -> not (null pps)) (allPlacementOptions w)
+--     -- bestPlacementOption = map (\(pp, pps) -> avgDistanceToMiddle pps) viablePlacementOptions
 
 
 distanceToMiddle :: PlacedPiece -> Double
