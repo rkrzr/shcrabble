@@ -139,9 +139,9 @@ placeString d (w:ws) (PlacedPiece c cs) = pp' : placeString d ws pp'
 
 -- get all placed pieces where a word could be attached, i.e.
 -- all pieces where either the x or the y-axis is still free
--- TODO: Allow words to be extended?
 getAvailablePlacedPieces :: PlayingField -> [PlacedPiece]
-getAvailablePlacedPieces pf = filter (not . (isPieceAvailable pf)) (Map.elems pf)
+getAvailablePlacedPieces pf = filter (isPieceAvailable pf) (Map.elems pf)
+
 
 -- a piece is available if either its left and right or upper and lower
 -- neigbors are free
@@ -149,8 +149,8 @@ isPieceAvailable :: PlayingField -> PlacedPiece -> Bool
 isPieceAvailable pf (PlacedPiece c cs) = isVerticalFree || isHorizontalFree
   where
     neighbors = getNeighbors pf cs
-    isVerticalFree   = all (== Nothing) [Map.lookup Up neighbors, Map.lookup Down neighbors]
-    isHorizontalFree = all (== Nothing) [Map.lookup L neighbors, Map.lookup R neighbors]
+    isVerticalFree   = emptyNeighbors cs [Up, Down] pf
+    isHorizontalFree = emptyNeighbors cs [L, R] pf
 
 
 executeTurn :: PlayingField -> Bag -> Maybe (PlayingField, Bag)
