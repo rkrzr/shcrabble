@@ -167,6 +167,19 @@ executeTurn pf (w:ws)  = case viablePlacementOptions w of
     viablePlacementOptions w = filter (\(pp, pps) -> not (null pps)) (allPlacementOptions w)
 
 
+distanceToMiddle :: PlacedPiece -> Double
+distanceToMiddle (PlacedPiece _ (x,y)) = sqrt $ centerX ** 2 + centerY ** 2
+  where
+    -- (x,y) is the top-right corner of a piece, and we have a sidelength of 1
+    centerX = fromIntegral x - 0.5
+    centerY = fromIntegral y - 0.5
+
+
+avgDistanceToMiddle :: [PlacedPiece] -> Double
+avgDistanceToMiddle [] = 0
+avgDistanceToMiddle pps =  sum (map distanceToMiddle pps) / fromIntegral (length pps)
+
+
 insertPlacedPieces :: [PlacedPiece] -> PlayingField -> PlayingField
 insertPlacedPieces [] pf = pf
 insertPlacedPieces (pp@(PlacedPiece c cs):pps) pf = case Map.lookup cs pf of
