@@ -59,10 +59,13 @@ getDirectonalPlacements' prefix (x:xs) mt pp@(PlacedPiece c cs) = case x == c of
   False -> getDirectonalPlacements' (prefix ++ [x]) xs mt pp
   True  -> case mt of
     -- place the prefix to the left and the suffix to the right of (x,y)
-    Horizontal -> let pps = placeString L (reverse prefix) pp ++ [pp] ++ placeString R xs pp
+    -- we have to reverse twice: Once to insert in single steps and once to make the order right again
+    Horizontal -> let placedPrefix = placeString L (reverse prefix) pp
+                      pps = reverse placedPrefix ++ [pp] ++ placeString R xs pp
                   in pps : getDirectonalPlacements' (prefix ++ [x]) xs mt pp
                   -- Note: Down is Up and Up is Down, thanks to SVG's weird coordinate system
-    Vertical   -> let pps = placeString Down (reverse prefix) pp ++ [pp] ++ placeString Up xs pp
+    Vertical   -> let placedPrefix = placeString Down (reverse prefix) pp
+                      pps = reverse placedPrefix ++ [pp] ++ placeString Up xs pp
                   in pps : getDirectonalPlacements' (prefix ++ [x]) xs mt pp
 
 
@@ -78,6 +81,7 @@ getFittingWords pf word pp = map snd fittingPlacements
 -- check if the given word does not touch or overlap with conflicting pieces
 isWordFitting :: PlayingField -> (MoveType, [PlacedPiece]) -> Bool
 isWordFitting pf (_, [])   = True
+-- TODO: Placed pieces are *not* ordered
 isWordFitting pf (mt, (pp@(PlacedPiece c cs):pps)) =
   isFirstValid && (all (isEqualOrEmpty pf mt) (init pps)) && isLastValid
   where
