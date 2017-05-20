@@ -30,6 +30,7 @@ executable shcrabble
                      , shcrabble
                      , containers
                      , optparse-applicative
+                     , directory
   default-language:    Haskell2010
 
 test-suite shcrabble-test

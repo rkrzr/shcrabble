@@ -3,7 +3,7 @@ module Main where
 import SVG
 import Types
 
-import Control.Monad (when)
+import Control.Monad (unless, when)
 import Data.Ord (comparing)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
@@ -12,6 +12,7 @@ import Data.Semigroup ((<>))
 import Debug.Trace (trace, traceShowId)
 import Options.Applicative (Parser, ParserInfo, argument, execParser, fullDesc, header, help,
   helper, info, long, metavar, short, str, strOption, switch, (<**>))
+import System.Directory (doesFileExist)
 import System.Environment (getArgs)
 
 data Options = Options {
@@ -264,12 +265,16 @@ readWordFile path = do
 main :: IO ()
 main = do
   options <- execParser optionsInfo
-  allWords <- readWordFile (oWordFile options)
-  let (firstWord:remainingWords) = allWords
-      playingField = placeFirstWord firstWord Map.empty
-      outputFilename = (oSvgFile options) ++ ".svg"
-  -- putStrLn $ "allWords: " ++ show allWords
+  fileExists <- doesFileExist (oWordFile options)
+  if fileExists
+    then do
+      allWords <- readWordFile (oWordFile options)
+      let (firstWord:remainingWords) = allWords
+          playingField = placeFirstWord firstWord Map.empty
+          outputFilename = (oSvgFile options) ++ ".svg"
+      -- putStrLn $ "allWords: " ++ show allWords
 
-  playingField' <- executeGame options playingField remainingWords
-  writePlayingField outputFilename playingField'
-
+      playingField' <- executeGame options playingField remainingWords
+      writePlayingField outputFilename playingField'
+    else do
+      putStrLn ("Word file does not exist: " ++ (oWordFile options))
