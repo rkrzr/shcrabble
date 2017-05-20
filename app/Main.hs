@@ -234,10 +234,7 @@ readWordFile path = do
   let messyWords = concatMap words $ lines content
       cleanWords = map (filter (`elem` allowedCharacters)) messyWords
       longerWords = filter (\x -> length x > 1) cleanWords
-      -- Heuristic: We sort words from longest to shortest to maximize
-      -- the number of fields that other words can attach to
-      sortedWords = reverse $ sortBy (comparing length) longerWords
-  return sortedWords
+  return longerWords
 
 
 main :: IO ()
