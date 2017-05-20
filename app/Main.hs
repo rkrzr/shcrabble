@@ -1,7 +1,6 @@
 module Main where
 
 import SVG
-import Trie
 import Types
 import Data.Ord (comparing)
 import qualified Data.Map as Map
@@ -244,18 +243,10 @@ main = do
     then error "Please provide a file with words. Usage: ./shcrabble \"wordFile.txt\"\n"
     else do
       allWords <- readWordFile (head args)
-      let trie = foldl (flip insert) emptyTrie allWords
-          (firstWord:remainingWords) = allWords
+      let (firstWord:remainingWords) = allWords
           playingField = placeFirstWord firstWord Map.empty
-      -- putStrLn $ "A trie: " ++ show trie
-      -- putStrLn $ "All prefixes: " ++ show (allPrefixes trie)
-      -- putStrLn $ "The playing field: " ++ show playingField
-      -- putStrLn $ generatePlayingFieldSVG playingField
-      putStrLn $ "allWords: " ++ show allWords
-      -- writePlayingField "/tmp/shcrabble.svg" playingField
-      -- putStrLn $ "Free neighbors: " ++ show (getAllFreeNeighbors playingField)
+      -- putStrLn $ "allWords: " ++ show allWords
 
       playingField' <- executeGame playingField remainingWords
       writePlayingField "/tmp/shcrabble_final.svg" playingField'
-      -- putStrLn $ "remainingWords': " ++ show remainingWords'
 
