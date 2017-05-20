@@ -3,17 +3,20 @@ module Main where
 import SVG
 import Types
 
+import Control.Monad (when)
 import Data.Ord (comparing)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 import Data.List (delete, minimumBy, sortBy)
 import Data.Semigroup ((<>))
 import Debug.Trace (trace, traceShowId)
-import Options.Applicative (Parser, help, long, metavar, short, strOption, switch)
+import Options.Applicative (Parser, ParserInfo, argument, execParser, fullDesc, header, help,
+  helper, info, long, metavar, short, str, strOption, switch, (<**>))
 import System.Environment (getArgs)
 
 data Options = Options {
     oGenerateSvgPerTurn :: Bool,
+    oWordFile :: FilePath,
     oSvgFile :: FilePath
   }
 
@@ -21,7 +24,14 @@ optionsParser :: Parser Options
 optionsParser =
   Options
     <$> switch (long "generate-svg-per-turn" <> short 'g' <> help "Generate an svg for each turn.")
-    <*> strOption (long "svg-file" <> metavar "FILENAME" <> help "File to write the final SVG to.")
+    <*> argument str (metavar "INPUT_FILE" <> help "File to read the wordlist from.")
+    <*> argument str (metavar "OUTPUT_FILE" <> help "File to write the final SVG to.")
+
+optionsInfo :: ParserInfo Options
+optionsInfo = info parser description
+  where
+    parser = optionsParser <**> helper
+    description = fullDesc <> header "Shcrabble - generate Scrabble-boards from any text file!"
 
 allDirections = [L ..]
 
@@ -226,19 +236,20 @@ insertPlacedPieces (pp@(PlacedPiece c cs):pps) pf = case Map.lookup cs pf of
     False -> error $ "The given piece " ++ show pp ++ " is invalid. " ++ show pp'
 
 
-executeGame :: PlayingField -> Bag -> IO PlayingField
-executeGame pf bag = executeGame' 1 pf bag
+executeGame :: Options -> PlayingField -> Bag -> IO PlayingField
+executeGame os pf bag = executeGame' os pf bag 1
 
 
-executeGame' :: Int -> PlayingField -> Bag -> IO PlayingField
-executeGame' _ pf []  = return pf
-executeGame' turn pf bag  = do
-  let filePath = "/tmp/shcrabble_" ++ show turn ++ ".svg"
-  writePlayingField filePath pf
+executeGame' :: Options -> PlayingField -> Bag -> Int -> IO PlayingField
+executeGame' _  pf []  _    = return pf
+executeGame' os pf bag turn = do
+  let filePath = (oSvgFile os) ++ show turn ++ ".svg"
+  -- write an SVG file for each turn if requested
+  _ <- when (oGenerateSvgPerTurn os) (writePlayingField filePath pf)
   let maybeEndOfGame = executeTurn pf bag
   case maybeEndOfGame of
     Nothing          -> putStrLn "The End." >> return pf
-    Just (pf', bag') -> executeGame' (turn + 1) pf' bag'
+    Just (pf', bag') -> executeGame' os pf' bag' (turn + 1)
 
 
 readWordFile :: FilePath -> IO [String]
@@ -252,16 +263,13 @@ readWordFile path = do
 
 main :: IO ()
 main = do
+  options <- execParser optionsInfo
+  allWords <- readWordFile (oWordFile options)
+  let (firstWord:remainingWords) = allWords
+      playingField = placeFirstWord firstWord Map.empty
+      outputFilename = (oSvgFile options) ++ ".svg"
+  -- putStrLn $ "allWords: " ++ show allWords
 
-  args <- getArgs
-  if length args == 0
-    then error "Please provide a file with words. Usage: ./shcrabble \"wordFile.txt\"\n"
-    else do
-      allWords <- readWordFile (head args)
-      let (firstWord:remainingWords) = allWords
-          playingField = placeFirstWord firstWord Map.empty
-      -- putStrLn $ "allWords: " ++ show allWords
-
-      playingField' <- executeGame playingField remainingWords
-      writePlayingField "/tmp/shcrabble_final.svg" playingField'
+  playingField' <- executeGame options playingField remainingWords
+  writePlayingField outputFilename playingField'
 
