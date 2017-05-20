@@ -2,12 +2,26 @@ module Main where
 
 import SVG
 import Types
+
 import Data.Ord (comparing)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 import Data.List (delete, minimumBy, sortBy)
+import Data.Semigroup ((<>))
 import Debug.Trace (trace, traceShowId)
+import Options.Applicative (Parser, help, long, metavar, short, strOption, switch)
 import System.Environment (getArgs)
+
+data Options = Options {
+    oGenerateSvgPerTurn :: Bool,
+    oSvgFile :: FilePath
+  }
+
+optionsParser :: Parser Options
+optionsParser =
+  Options
+    <$> switch (long "generate-svg-per-turn" <> short 'g' <> help "Generate an svg for each turn.")
+    <*> strOption (long "svg-file" <> metavar "FILENAME" <> help "File to write the final SVG to.")
 
 allDirections = [L ..]
 
@@ -238,6 +252,7 @@ readWordFile path = do
 
 main :: IO ()
 main = do
+
   args <- getArgs
   if length args == 0
     then error "Please provide a file with words. Usage: ./shcrabble \"wordFile.txt\"\n"
