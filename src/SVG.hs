@@ -12,7 +12,8 @@ generatePlayingFieldSVG pf = header ++ pieces ++ "\n" ++ footer
   where
     header = unlines [
       "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>",
-      "<svg width=\"" ++ show sideLengthX ++ "\" height=\"" ++ show sideLengthY ++ "\">"
+      "<svg width=\"" ++ show sideLengthX ++ "\" height=\"" ++ show sideLengthY ++
+      "\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">"
       ]
     pieces = concat $ intersperse "\n" $
       map (\(cs, (PlacedPiece char _)) -> renderPiece sideLength minXoffset minYoffset cs char) (Map.toList pf)
