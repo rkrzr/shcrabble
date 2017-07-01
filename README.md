@@ -19,6 +19,10 @@ This will generate an `haikuboard.svg` file:
 
 ![haikuboard.svg](https://cdn.rawgit.com/rkrzr/shcrabble/master/haikuboard.svg#v1)
 
+A bigger example:
+
+![dichtermut.svg](https://cdn.rawgit.com/rkrzr/shcrabble/master/dichtermut.svg#v1)
+
 ## Installation
 
 You will need the `stack` package manager to install `shcrabble`:
