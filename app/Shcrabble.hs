@@ -159,20 +159,6 @@ getAllPlacementOptions :: String -> PlayingField -> PlacedPiece -> [(String, [Pl
 getAllPlacementOptions w pf pp = map (\pps -> (w, pps)) $ getFittingWords pf w pp
 
 
--- executeTurn :: PlayingField -> Bag -> Maybe (PlayingField, Bag)
--- executeTurn pf []      = Nothing  -- end of the game
--- executeTurn pf (w:ws)  = case viablePlacementOptions w of
---   [] -> executeTurn pf ws  -- try the next word in the bag
---   -- we simply pick the first viable placement option for a word
---   -- this could be tuned later
---   ((pp, (pps:_)):xs) -> Just (insertPlacedPieces pps pf, ws)
---   where
---     -- all placed pieces where a word could be attached
---     availablePlacedPieces = getAvailablePlacedPieces pf
---     allPlacementOptions w = map (\pp -> getFittingWords pf pp w) availablePlacedPieces
---     viablePlacementOptions w = filter (\(pp, pps) -> not (null pps)) (allPlacementOptions w)
-
-
 distanceToMiddle :: PlacedPiece -> Double
 distanceToMiddle (PlacedPiece _ (x,y)) = sqrt $ centerX ** 2 + centerY ** 2
   where

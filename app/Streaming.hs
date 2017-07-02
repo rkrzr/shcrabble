@@ -17,26 +17,28 @@ import System.Directory (doesFileExist)
 
 
 placeWords :: [String] -> T.PlayingField -> T.PlayingField
-placeWords []     pf = pf
-placeWords (w:ws) pf = case matchingWords of
+placeWords [] pf = pf
+placeWords ws pf = case matchingWords of
     []  -> error "There were no more matching words."
-    w:_ -> placeWords ws (placeWord w pf)
+    w:remainingWords -> placeWords remainingWords (placeWord w pf)
   where
-    matchingWords = getMatchingWords ws
+    -- drop words until there is one that matches
+    matchingWords = dropWhile (\w -> getMatches w pf == []) ws
 
 
 placeWord :: String -> T.PlayingField -> T.PlayingField
 placeWord word pf = case possiblePlacements of
     []  -> error $ "It is not possible to place the word: " ++ word
     -- we arbitrarily pick the first possible placement
-    p:_ -> insertWord p pf
+    pps:_ -> L.insertPlacedPieces pps pf
   where
     possiblePlacements = getPlacements word pf
 
 
-getMatchingWords = undefined
-getPlacements = undefined
-insertWord = undefined
+getMatches :: String -> T.PlayingField -> [T.PlacedPiece]
+getMatches = _
+
+getPlacements = _
 
 
 main :: IO ()
