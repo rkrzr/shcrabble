@@ -8,12 +8,19 @@
 module Main where
 
 import qualified Lib as L
+import qualified Types as T
 
 import Options.Applicative (execParser)
+import System.Directory (doesFileExist)
 
 main :: IO ()
 main = do
   options <- execParser L.optionsInfo
-  return ()
-  -- args <- getArgs
-  -- words <- readWordFile
+  let filePath = T.oWordFile options
+  fileExists <- doesFileExist filePath
+  if fileExists
+    then do
+      allWords <- L.readWordFile filePath
+      mapM_ print allWords
+    else do
+      putStrLn ("Word file does not exist: " ++ filePath)

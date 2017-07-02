@@ -38,8 +38,7 @@ executable shcrabble
 executable shcrabble_streaming
   hs-source-dirs:      app
   main-is:             Streaming.hs
-  -- ghc-options:         -Wall -Werror -threaded -rtsopts -with-rtsopts=-N
-  ghc-options:         -Werror -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -Wall -Werror -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , shcrabble
                      , containers
