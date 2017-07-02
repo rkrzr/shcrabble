@@ -5,16 +5,11 @@ import Types
 
 import Control.Monad (when)
 import Data.Ord (comparing)
-import qualified Data.Map as Map
 import Data.List (delete, sortBy)
 import Options.Applicative (execParser)
 import System.Directory (doesFileExist)
 
-
--- find all words in the bag that could be attached to the given character
-getMatchingWords :: Bag -> PlacedPiece -> (PlacedPiece, [String])
-getMatchingWords [] pp                   = (pp, [])
-getMatchingWords xs pp@(PlacedPiece c _) = (pp, filter (elem c) xs)
+import qualified Data.Map as Map
 
 
 executeTurn :: PlayingField -> Bag -> Maybe (PlayingField, Bag)
