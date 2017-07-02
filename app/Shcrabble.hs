@@ -186,15 +186,6 @@ avgDistanceToMiddle [] = 0
 avgDistanceToMiddle pps =  sum (map distanceToMiddle pps) / fromIntegral (length pps)
 
 
-insertPlacedPieces :: [PlacedPiece] -> PlayingField -> PlayingField
-insertPlacedPieces [] pf = pf
-insertPlacedPieces (pp@(PlacedPiece c cs):pps) pf = case Map.lookup cs pf of
-  Nothing  -> insertPlacedPieces pps (Map.insert cs pp pf)
-  Just pp' -> case pp == pp' of
-    True  -> insertPlacedPieces pps (Map.insert cs pp pf)
-    False -> error $ "The given piece " ++ show pp ++ " is invalid. " ++ show pp'
-
-
 executeGame :: Options -> PlayingField -> Bag -> IO PlayingField
 executeGame os pf bag = executeGame' os pf bag 1
 

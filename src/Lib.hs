@@ -1,4 +1,5 @@
 module Lib (
+  insertPlacedPieces,
   optionsInfo,
   placeFirstWord,
   readWordFile,
@@ -60,3 +61,10 @@ writePlayingField :: FilePath -> PlayingField -> IO ()
 writePlayingField filePath pf = writeFile filePath (generatePlayingFieldSVG pf)
 
 
+insertPlacedPieces :: [PlacedPiece] -> PlayingField -> PlayingField
+insertPlacedPieces [] pf = pf
+insertPlacedPieces (pp@(PlacedPiece c cs):pps) pf = case Map.lookup cs pf of
+  Nothing  -> insertPlacedPieces pps (Map.insert cs pp pf)
+  Just pp' -> case pp == pp' of
+    True  -> insertPlacedPieces pps (Map.insert cs pp pf)
+    False -> error $ "The given piece " ++ show pp ++ " is invalid. " ++ show pp'

@@ -16,8 +16,28 @@ import Options.Applicative (execParser)
 import System.Directory (doesFileExist)
 
 
+placeWords :: [String] -> T.PlayingField -> T.PlayingField
+placeWords []     pf = pf
+placeWords (w:ws) pf = case matchingWords of
+    []  -> error "There were no more matching words."
+    w:_ -> placeWords ws (placeWord w pf)
+  where
+    matchingWords = getMatchingWords ws
+
+
 placeWord :: String -> T.PlayingField -> T.PlayingField
-placeWord word = undefined
+placeWord word pf = case possiblePlacements of
+    []  -> error $ "It is not possible to place the word: " ++ word
+    -- we arbitrarily pick the first possible placement
+    p:_ -> insertWord p pf
+  where
+    possiblePlacements = getPlacements word pf
+
+
+getMatchingWords = undefined
+getPlacements = undefined
+insertWord = undefined
+
 
 main :: IO ()
 main = do
@@ -31,7 +51,8 @@ main = do
       let (firstWord:remainingWords) = allWords
           playingField = L.placeFirstWord firstWord Map.empty
           outputFilename = (T.oSvgFile options) ++ ".svg"
-      print playingField
+          finalPlayingField = placeWords remainingWords playingField
+
       L.writePlayingField outputFilename playingField
     else do
       putStrLn ("Word file does not exist: " ++ filePath)
