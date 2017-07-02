@@ -1,5 +1,6 @@
 module Main where
 
+import Lib
 import SVG
 import Types
 
@@ -35,10 +36,6 @@ optionsInfo = info parser description
     description = fullDesc <> header "Shcrabble - generate Scrabble-boards from any text file!"
 
 allDirections = [L ..]
-
-lowerAlphabet = ['a' .. 'z']
-upperAlphabet = ['A' .. 'Z']
-allowedCharacters = lowerAlphabet ++ upperAlphabet
 
 
 -- we always place the first word starting from (1,1) to the right
@@ -251,15 +248,6 @@ executeGame' os pf bag turn = do
   case maybeEndOfGame of
     Nothing          -> putStrLn "The End." >> return pf
     Just (pf', bag') -> executeGame' os pf' bag' (turn + 1)
-
-
-readWordFile :: FilePath -> IO [String]
-readWordFile path = do
-  content <- readFile path
-  let messyWords = concatMap words $ lines content
-      cleanWords = map (filter (`elem` allowedCharacters)) messyWords
-      longerWords = filter (\x -> length x > 1) cleanWords
-  return longerWords
 
 
 main :: IO ()
