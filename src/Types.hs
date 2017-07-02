@@ -3,6 +3,7 @@ module Types (
   Coordinates,
   Direction(..),
   MoveType(..),
+  Options(..),
   PlacedPiece(..),
   PlayingField
 ) where
@@ -32,3 +33,10 @@ type PlayingField = Map.Map Coordinates PlacedPiece
 -- TODO: Start using this
 -- A placement is one possible way how a word could be played
 data Placement = Placement String MoveType [PlacedPiece]
+
+-- command-line arguments
+data Options = Options {
+    oGenerateSvgPerTurn :: Bool,
+    oWordFile :: FilePath,
+    oSvgFile :: FilePath
+  }

@@ -9,34 +9,13 @@ import Data.Ord (comparing)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 import Data.List (delete, minimumBy, sortBy)
-import Data.Semigroup ((<>))
 import Debug.Trace (trace, traceShowId)
-import Options.Applicative (Parser, ParserInfo, argument, execParser, fullDesc, header, help,
-  helper, info, long, metavar, short, str, strOption, switch, (<**>))
+import Options.Applicative (execParser)
 import System.Directory (doesFileExist)
 import System.Environment (getArgs)
 
-data Options = Options {
-    oGenerateSvgPerTurn :: Bool,
-    oWordFile :: FilePath,
-    oSvgFile :: FilePath
-  }
-
-optionsParser :: Parser Options
-optionsParser =
-  Options
-    <$> switch (long "generate-svg-per-turn" <> short 'g' <> help "Generate an svg for each turn.")
-    <*> argument str (metavar "INPUT_FILE" <> help "File to read the wordlist from.")
-    <*> argument str (metavar "OUTPUT_FILE" <> help "File to write the final SVG to.")
-
-optionsInfo :: ParserInfo Options
-optionsInfo = info parser description
-  where
-    parser = optionsParser <**> helper
-    description = fullDesc <> header "Shcrabble - generate Scrabble-boards from any text file!"
 
 allDirections = [L ..]
-
 
 -- we always place the first word starting from (1,1) to the right
 placeFirstWord :: String -> PlayingField -> PlayingField

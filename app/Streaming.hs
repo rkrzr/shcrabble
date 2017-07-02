@@ -7,4 +7,13 @@
 
 module Main where
 
-main = undefined
+import qualified Lib as L
+
+import Options.Applicative (execParser)
+
+main :: IO ()
+main = do
+  options <- execParser L.optionsInfo
+  return ()
+  -- args <- getArgs
+  -- words <- readWordFile
