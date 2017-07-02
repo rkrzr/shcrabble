@@ -23,7 +23,19 @@ library
 
 executable shcrabble
   hs-source-dirs:      app
-  main-is:             Main.hs
+  main-is:             Shcrabble.hs
+  -- ghc-options:         -Wall -Werror -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -Werror -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , shcrabble
+                     , containers
+                     , optparse-applicative
+                     , directory
+  default-language:    Haskell2010
+
+executable shcrabble_streaming
+  hs-source-dirs:      app
+  main-is:             Streaming.hs
   -- ghc-options:         -Wall -Werror -threaded -rtsopts -with-rtsopts=-N
   ghc-options:         -Werror -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
