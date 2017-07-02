@@ -22,17 +22,19 @@ placeWords ws pf = case matchingWords of
     []  -> error "There were no more matching words."
     w:remainingWords -> placeWords remainingWords (placeWord w pf)
   where
-    -- drop words until there is one that matches
-    matchingWords = dropWhile (\w -> getMatches w pf == []) ws
+    -- we simply skip words until there is one that matches
+    matchingWords = dropWhile noMatch ws
+    -- TODO: Get all placements that are *actually* possible given the pf
+    noMatch w = all null $ map (L.getAllPossiblePlacements w) (Map.elems pf)
 
 
 placeWord :: String -> T.PlayingField -> T.PlayingField
 placeWord word pf = case possiblePlacements of
     []  -> error $ "It is not possible to place the word: " ++ word
     -- we arbitrarily pick the first possible placement
-    pps:_ -> L.insertPlacedPieces pps pf
+    (mt, pps):_ -> L.insertPlacedPieces pps pf
   where
-    possiblePlacements = getPlacements word pf
+    possiblePlacements = concatMap (L.getAllPossiblePlacements word) (Map.elems pf)
 
 
 getMatches :: String -> T.PlayingField -> [T.PlacedPiece]
@@ -55,6 +57,6 @@ main = do
           outputFilename = (T.oSvgFile options) ++ ".svg"
           finalPlayingField = placeWords remainingWords playingField
 
-      L.writePlayingField outputFilename playingField
+      L.writePlayingField outputFilename finalPlayingField
     else do
       putStrLn ("Word file does not exist: " ++ filePath)

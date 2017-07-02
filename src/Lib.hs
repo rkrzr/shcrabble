@@ -1,5 +1,6 @@
 module Lib (
   getAllPlacementOptions,
+  getAllPossiblePlacements,
   getAvailablePlacedPieces,
   insertPlacedPieces,
   optionsInfo,
