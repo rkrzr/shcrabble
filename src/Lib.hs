@@ -155,31 +155,31 @@ getFittingWords pf word pp = map snd fittingPlacements
 getAllPossiblePlacements :: String -> PlacedPiece -> [(MoveType, [PlacedPiece])]
 getAllPossiblePlacements word pp = horizontalPlacements ++ verticalPlacements
   where
-    horizontalPlacements = zip (repeat Horizontal) $ getDirectonalPlacements word Horizontal pp
-    verticalPlacements   = zip (repeat Vertical) $ getDirectonalPlacements word Vertical pp
+    horizontalPlacements = zip (repeat Horizontal) $ getDirectionalPlacements word Horizontal pp
+    verticalPlacements   = zip (repeat Vertical) $ getDirectionalPlacements word Vertical pp
 
 
-getDirectonalPlacements :: String -> MoveType -> PlacedPiece -> [[PlacedPiece]]
-getDirectonalPlacements word mt pp = getDirectonalPlacements' [] word mt pp
+getDirectionalPlacements :: String -> MoveType -> PlacedPiece -> [[PlacedPiece]]
+getDirectionalPlacements word mt pp = getDirectionalPlacements' [] word mt pp
 
 
 -- Note: We are generating all theoretical options here, they may not be possible
 -- in practice, if there are already different pieces on the playing field
-getDirectonalPlacements' :: String -> String -> MoveType -> PlacedPiece -> [[PlacedPiece]]
-getDirectonalPlacements' prefix [] mt pp@(PlacedPiece c cs) = []
-getDirectonalPlacements' prefix (x:xs) mt pp@(PlacedPiece c cs) = case x == c of
+getDirectionalPlacements' :: String -> String -> MoveType -> PlacedPiece -> [[PlacedPiece]]
+getDirectionalPlacements' prefix [] mt pp@(PlacedPiece c cs) = []
+getDirectionalPlacements' prefix (x:xs) mt pp@(PlacedPiece c cs) = case x == c of
   -- skip characters that don't match
-  False -> getDirectonalPlacements' (prefix ++ [x]) xs mt pp
+  False -> getDirectionalPlacements' (prefix ++ [x]) xs mt pp
   True  -> case mt of
     -- place the prefix to the left and the suffix to the right of (x,y)
     -- we have to reverse twice: Once to insert in single steps and once to make the order right again
     Horizontal -> let placedPrefix = placeString L (reverse prefix) pp
                       pps = reverse placedPrefix ++ [pp] ++ placeString R xs pp
-                  in pps : getDirectonalPlacements' (prefix ++ [x]) xs mt pp
+                  in pps : getDirectionalPlacements' (prefix ++ [x]) xs mt pp
                   -- Note: Down is Up and Up is Down, thanks to SVG's weird coordinate system
     Vertical   -> let placedPrefix = placeString Down (reverse prefix) pp
                       pps = reverse placedPrefix ++ [pp] ++ placeString Up xs pp
-                  in pps : getDirectonalPlacements' (prefix ++ [x]) xs mt pp
+                  in pps : getDirectionalPlacements' (prefix ++ [x]) xs mt pp
 
 
 placeString :: Direction -> String -> PlacedPiece -> [PlacedPiece]
