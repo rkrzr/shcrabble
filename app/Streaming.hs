@@ -10,8 +10,14 @@ module Main where
 import qualified Lib as L
 import qualified Types as T
 
+import qualified Data.Map as Map
+
 import Options.Applicative (execParser)
 import System.Directory (doesFileExist)
+
+
+placeWord :: String -> T.PlayingField -> T.PlayingField
+placeWord word = undefined
 
 main :: IO ()
 main = do
@@ -21,6 +27,11 @@ main = do
   if fileExists
     then do
       allWords <- L.readWordFile filePath
-      mapM_ print allWords
+      -- mapM_ print allWords
+      let (firstWord:remainingWords) = allWords
+          playingField = L.placeFirstWord firstWord Map.empty
+          outputFilename = (T.oSvgFile options) ++ ".svg"
+      print playingField
+      L.writePlayingField outputFilename playingField
     else do
       putStrLn ("Word file does not exist: " ++ filePath)

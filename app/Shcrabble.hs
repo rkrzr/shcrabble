@@ -15,24 +15,6 @@ import System.Directory (doesFileExist)
 import System.Environment (getArgs)
 
 
-allDirections = [L ..]
-
--- we always place the first word starting from (1,1) to the right
-placeFirstWord :: String -> PlayingField -> PlayingField
-placeFirstWord [] pf = pf
-placeFirstWord xs pf = placeFirstWord' xs pf (1,1)
-
-
-placeFirstWord' :: String -> PlayingField -> Coordinates -> PlayingField
-placeFirstWord' [] pf _         = pf
-placeFirstWord' (z:zs) pf cs@(x,y) = placeFirstWord' zs newPlayingField (x+1, y)
-  where newPlayingField = Map.insert cs (PlacedPiece z cs) pf
-
-
-writePlayingField :: FilePath -> PlayingField -> IO ()
-writePlayingField filePath pf = writeFile filePath (generatePlayingFieldSVG pf)
-
-
 getNeighbors :: PlayingField -> Coordinates -> Map.Map Direction (Maybe PlacedPiece)
 getNeighbors pf (x,y) = Map.map (\cs -> Map.lookup cs pf) neighborMap
   where

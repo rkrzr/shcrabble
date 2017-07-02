@@ -1,13 +1,18 @@
 module Lib (
   optionsInfo,
-  readWordFile
+  placeFirstWord,
+  readWordFile,
+  writePlayingField
 ) where
 
+import SVG
 import Types
 
 import Data.Semigroup ((<>))
 import Options.Applicative (Parser, ParserInfo, argument, fullDesc, header, help,
   helper, info, long, metavar, short, str, strOption, switch, (<**>))
+
+import qualified Data.Map as Map
 
 -- Parsing of command-line arguments
 
@@ -36,4 +41,22 @@ readWordFile path = do
       cleanWords = map (filter (`elem` allowedCharacters)) messyWords
       longerWords = filter (\x -> length x > 1) cleanWords
   return longerWords
+
+-- Game code
+
+-- we always place the first word starting from (1,1) to the right
+placeFirstWord :: String -> PlayingField -> PlayingField
+placeFirstWord [] pf = pf
+placeFirstWord xs pf = placeFirstWord' xs pf (1,1)
+
+
+placeFirstWord' :: String -> PlayingField -> Coordinates -> PlayingField
+placeFirstWord' [] pf _         = pf
+placeFirstWord' (z:zs) pf cs@(x,y) = placeFirstWord' zs newPlayingField (x+1, y)
+  where newPlayingField = Map.insert cs (PlacedPiece z cs) pf
+
+
+writePlayingField :: FilePath -> PlayingField -> IO ()
+writePlayingField filePath pf = writeFile filePath (generatePlayingFieldSVG pf)
+
 
