@@ -12,11 +12,27 @@ import qualified Types as T
 
 import qualified Data.Map as Map
 
+import Control.Monad (when)
 import Options.Applicative (execParser)
 import System.Directory (doesFileExist)
 
 
-placeWords :: [String] -> T.PlayingField -> T.PlayingField
+-- TODO: Don't copy this code
+executeGame :: T.Options -> T.Bag -> T.PlayingField -> IO T.PlayingField
+executeGame os bag pf = executeGame' os bag pf 1
+
+
+executeGame' :: T.Options -> T.Bag -> T.PlayingField -> Int -> IO T.PlayingField
+executeGame' _  []  pf _    = return pf
+executeGame' os bag pf turn = do
+  let filePath = (T.oSvgFile os) ++ show turn ++ ".svg"
+  -- write an SVG file for each turn if requested
+  _ <- when (T.oGenerateSvgPerTurn os) (L.writePlayingField filePath pf)
+  let finalPlayingField = placeWords bag pf
+  pure finalPlayingField
+
+
+placeWords :: T.Bag -> T.PlayingField -> T.PlayingField
 placeWords [] pf = pf
 placeWords ws pf = case matchingWords of
     []  -> error "There were no more matching words."
@@ -55,7 +71,7 @@ main = do
       let (firstWord:remainingWords) = allWords
           playingField = L.placeFirstWord firstWord Map.empty
           outputFilename = (T.oSvgFile options) ++ ".svg"
-          finalPlayingField = placeWords remainingWords playingField
+      finalPlayingField <- executeGame options remainingWords playingField
 
       L.writePlayingField outputFilename finalPlayingField
     else do
