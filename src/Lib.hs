@@ -2,6 +2,7 @@ module Lib (
   getAllPlacementOptions,
   getAllPossiblePlacements,
   getAvailablePlacedPieces,
+  getFittingWords,
   insertPlacedPieces,
   optionsInfo,
   placeFirstWord,

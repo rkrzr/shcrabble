@@ -28,35 +28,31 @@ executeGame' os bag pf turn = do
   let filePath = (T.oSvgFile os) ++ show turn ++ ".svg"
   -- write an SVG file for each turn if requested
   _ <- when (T.oGenerateSvgPerTurn os) (L.writePlayingField filePath pf)
-  let finalPlayingField = placeWords bag pf
-  pure finalPlayingField
+  let maybeEndOfGame = placeWords bag pf
+  case maybeEndOfGame of
+    Nothing          -> pure pf
+    Just (pf', bag') -> executeGame' os bag' pf' (turn+1)
 
 
-placeWords :: T.Bag -> T.PlayingField -> T.PlayingField
-placeWords [] pf = pf
+placeWords :: T.Bag -> T.PlayingField -> Maybe (T.PlayingField, T.Bag)
+placeWords [] pf = Nothing  -- no words left in the bag
 placeWords ws pf = case matchingWords of
-    []  -> error "There were no more matching words."
-    w:remainingWords -> placeWords remainingWords (placeWord w pf)
+    []  -> Nothing  -- there were no more matching words
+    -- w:remainingWords -> placeWords remainingWords (placeWord w pf)
+    w:remainingWords -> Just (placeWord w pf, remainingWords)
   where
     -- we simply skip words until there is one that matches
     matchingWords = dropWhile noMatch ws
-    -- TODO: Get all placements that are *actually* possible given the pf
-    noMatch w = all null $ map (L.getAllPossiblePlacements w) (Map.elems pf)
+    noMatch w = all null $ concatMap (L.getFittingWords pf w) (Map.elems pf)
 
 
 placeWord :: String -> T.PlayingField -> T.PlayingField
 placeWord word pf = case possiblePlacements of
     []  -> error $ "It is not possible to place the word: " ++ word
     -- we arbitrarily pick the first possible placement
-    (mt, pps):_ -> L.insertPlacedPieces pps pf
+    pps:_ -> L.insertPlacedPieces pps pf
   where
-    possiblePlacements = concatMap (L.getAllPossiblePlacements word) (Map.elems pf)
-
-
-getMatches :: String -> T.PlayingField -> [T.PlacedPiece]
-getMatches = _
-
-getPlacements = _
+    possiblePlacements = concatMap (L.getFittingWords pf word) (Map.elems pf)
 
 
 main :: IO ()
