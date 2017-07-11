@@ -27,19 +27,6 @@ executeTurn pf ws = case sortedPlacements of
     sortedPlacements = sortBy (\(w1, pps1) (w2, pps2) -> comparing avgDistanceToMiddle pps1 pps2) viablePlacementOptions
 
 
-distanceToMiddle :: PlacedPiece -> Double
-distanceToMiddle (PlacedPiece _ (x,y)) = sqrt $ centerX ** 2 + centerY ** 2
-  where
-    -- (x,y) is the top-right corner of a piece, and we have a sidelength of 1
-    centerX = fromIntegral x - 0.5
-    centerY = fromIntegral y - 0.5
-
-
-avgDistanceToMiddle :: [PlacedPiece] -> Double
-avgDistanceToMiddle [] = 0
-avgDistanceToMiddle pps =  sum (map distanceToMiddle pps) / fromIntegral (length pps)
-
-
 executeGame :: Options -> PlayingField -> Bag -> IO PlayingField
 executeGame os pf bag = executeGame' os pf bag 1
 

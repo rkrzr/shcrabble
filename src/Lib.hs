@@ -1,4 +1,6 @@
 module Lib (
+  distanceToMiddle,
+  avgDistanceToMiddle,
   getAllPlacementOptions,
   getAllPossiblePlacements,
   getAvailablePlacedPieces,
@@ -196,4 +198,19 @@ placeString d (w:ws) (PlacedPiece c cs) = pp' : placeString d ws pp'
 getAllPlacementOptions :: String -> PlayingField -> PlacedPiece -> [(String, [PlacedPiece])]
 getAllPlacementOptions w pf pp = map (\pps -> (w, pps)) $ getFittingWords pf w pp
 
+
+distanceToMiddle :: PlacedPiece -> Double
+distanceToMiddle (PlacedPiece _ (x,y)) = sqrt $ centerX ** 2 + centerY ** 2
+  where
+    -- (x,y) is the top-right corner of a piece, and we have a sidelength of 1
+    centerX = fromIntegral x - 0.5
+    centerY = fromIntegral y - 0.5
+
+
+avgDistanceToMiddle :: [PlacedPiece] -> Double
+avgDistanceToMiddle [] = 0
+avgDistanceToMiddle pps =  sum (map distanceToMiddle pps) / fromIntegral (length pps)
+
+instance Ord PlacedPiece where
+  pp1 `compare` pp2 = distanceToMiddle pp1 `compare` distanceToMiddle pp2
 

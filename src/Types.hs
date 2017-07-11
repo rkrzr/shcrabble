@@ -40,3 +40,4 @@ data Options = Options {
     oWordFile :: FilePath,
     oSvgFile :: FilePath
   }
+
