@@ -214,3 +214,5 @@ avgDistanceToMiddle pps =  sum (map distanceToMiddle pps) / fromIntegral (length
 instance Ord PlacedPiece where
   pp1 `compare` pp2 = distanceToMiddle pp1 `compare` distanceToMiddle pp2
 
+instance Show PlacedPiece where
+  show pp = show $ distanceToMiddle pp

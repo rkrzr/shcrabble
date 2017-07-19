@@ -26,7 +26,8 @@ data MoveType = Horizontal | Vertical
 
 -- it's convenient to have a piece know its coordinates
 data PlacedPiece = PlacedPiece {ppChar :: Char, ppCoordinates :: Coordinates}
-  deriving (Eq, Show)
+  -- deriving (Eq, Show)
+  deriving (Eq)
 
 type PlayingField = Map.Map Coordinates PlacedPiece
 
