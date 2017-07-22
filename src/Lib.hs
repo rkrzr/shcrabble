@@ -54,12 +54,12 @@ readWordFile path = do
 -- we always place the first word starting from (1,1) to the right
 placeFirstWord :: String -> PlayingField -> PlayingField
 placeFirstWord [] pf = pf
-placeFirstWord xs pf = placeFirstWord' xs pf (1,1)
+placeFirstWord xs pf = placeFirstWord' xs pf (C (1,1))
 
 
 placeFirstWord' :: String -> PlayingField -> Coordinates -> PlayingField
 placeFirstWord' [] pf _         = pf
-placeFirstWord' (z:zs) pf cs@(x,y) = placeFirstWord' zs newPlayingField (x+1, y)
+placeFirstWord' (z:zs) pf cs@(C (x,y)) = placeFirstWord' zs newPlayingField (C (x+1, y))
   where newPlayingField = Map.insert cs (PlacedPiece z cs) pf
 
 
@@ -93,9 +93,9 @@ isPieceAvailable pf (PlacedPiece c cs) = isVerticalFree || isHorizontalFree
 
 
 getNeighbors :: PlayingField -> Coordinates -> Map.Map Direction (Maybe PlacedPiece)
-getNeighbors pf (x,y) = Map.map (\cs -> Map.lookup cs pf) neighborMap
+getNeighbors pf (C (x,y)) = Map.map (\cs -> Map.lookup cs pf) neighborMap
   where
-    neighborCoordinates = [(L, (x-1, y)), (R, (x+1, y)), (Up, (x, y+1)), (Down, (x, y-1))]
+    neighborCoordinates = [(L, (C (x-1, y))), (R, (C (x+1, y))), (Up, (C (x, y+1))), (Down, (C (x, y-1)))]
     neighborMap = Map.fromList neighborCoordinates
 
 
@@ -109,10 +109,10 @@ isNeighborEmpty cs pf d = Map.notMember (goOne d cs) pf
 
 
 goOne :: Direction -> Coordinates -> Coordinates
-goOne Up   (x,y) = (x, y+1)
-goOne Down (x,y) = (x, y-1)
-goOne L    (x,y) = (x-1, y)
-goOne R    (x,y) = (x+1, y)
+goOne Up   (C (x,y)) = (C (x, y+1))
+goOne Down (C (x,y)) = (C (x, y-1))
+goOne L    (C (x,y)) = (C (x-1, y))
+goOne R    (C (x,y)) = (C (x+1, y))
 
 
 -- check if the given word does not touch or overlap with conflicting pieces
@@ -200,7 +200,15 @@ getAllPlacementOptions w pf pp = map (\pps -> (w, pps)) $ getFittingWords pf w p
 
 
 distanceToMiddle :: PlacedPiece -> Double
-distanceToMiddle (PlacedPiece _ (x,y)) = sqrt $ centerX ** 2 + centerY ** 2
+distanceToMiddle (PlacedPiece _ (C (x,y))) = sqrt $ centerX ** 2 + centerY ** 2
+  where
+    -- (x,y) is the top-right corner of a piece, and we have a sidelength of 1
+    -- TODO: Fix this for negative indices
+    centerX = fromIntegral x -- 0.5
+    centerY = fromIntegral y -- 0.5
+
+cDistanceToMiddle :: Coordinates -> Double
+cDistanceToMiddle (C (x,y)) = sqrt $ centerX ** 2 + centerY ** 2
   where
     -- (x,y) is the top-right corner of a piece, and we have a sidelength of 1
     -- TODO: Fix this for negative indices
@@ -212,14 +220,12 @@ avgDistanceToMiddle :: [PlacedPiece] -> Double
 avgDistanceToMiddle [] = 0
 avgDistanceToMiddle pps =  sum (map distanceToMiddle pps) / fromIntegral (length pps)
 
-instance Ord PlacedPiece where
-  pp1 `compare` pp2 = distanceToMiddle pp1 `compare` distanceToMiddle pp2
+-- instance Ord PlacedPiece where
+--   pp1 `compare` pp2 = distanceToMiddle pp1 `compare` distanceToMiddle pp2
 
 instance Show PlacedPiece where
   show pp = show $ distanceToMiddle pp
 
--- TODO: Make Coordinates a newtype
--- instance Ord Coordinates where
---   c1 `compare` c2 =
---     distanceToMiddle (PlacedPiece 'a' c1) `compare` distanceToMiddle (PlacedPiece 'a' c2)
+instance Ord Coordinates where
+  c1 `compare` c2 = cDistanceToMiddle c1 `compare` cDistanceToMiddle c2
 

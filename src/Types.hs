@@ -1,6 +1,6 @@
 module Types (
   Bag,
-  Coordinates,
+  Coordinates(..),
   Direction(..),
   MoveType(..),
   Options(..),
@@ -10,8 +10,9 @@ module Types (
 
 import qualified Data.Map as Map
 
--- newtype Coordinates = Coordinates (Int, Int) deriving (Eq, Show)
-type Coordinates = (Int, Int)
+newtype Coordinates = C {cCoordinates :: (Int, Int)}
+  deriving (Eq, Show)
+-- type Coordinates = (Int, Int)
 
 -- the bag of remaining words
 type Bag = [String]

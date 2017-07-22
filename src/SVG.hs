@@ -20,7 +20,7 @@ generatePlayingFieldSVG pf = header ++ pieces ++ "\n" ++ footer
     footer = "</svg>"
     -- length of one side of a piece in pixels
     sideLength = 50
-    (xs, ys) = unzip $ Map.keys pf
+    (xs, ys) = unzip $ map cCoordinates $ Map.keys pf
     minX = minimum xs
     minY = minimum ys
     maxX = maximum xs
@@ -32,7 +32,7 @@ generatePlayingFieldSVG pf = header ++ pieces ++ "\n" ++ footer
     sideLengthY = minYoffset + sideLength * (maxY + 2)
 
 renderPiece :: Int -> Int -> Int -> Coordinates -> Char -> String
-renderPiece sideLength minXoffset minYoffset (x,y) char =
+renderPiece sideLength minXoffset minYoffset (C (x,y)) char =
   wrapInSvg $ rectangle ++ "\n" ++ shapeText
   where
     startX = show $ minXoffset + x * sideLength
