@@ -16,10 +16,11 @@ import SVG
 import Types
 
 import Data.Semigroup ((<>))
+import Debug.Trace (trace, traceShowId)
 import Options.Applicative (Parser, ParserInfo, argument, fullDesc, header, help,
   helper, info, long, metavar, short, str, strOption, switch, (<**>))
 
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 
 -- Parsing of command-line arguments
 
@@ -118,8 +119,9 @@ goOne R    (C (x,y)) = (C (x+1, y))
 -- check if the given word does not touch or overlap with conflicting pieces
 isWordFitting :: PlayingField -> (MoveType, [PlacedPiece]) -> Bool
 isWordFitting pf (_, [])   = True
--- TODO: Placed pieces are *not* ordered
-isWordFitting pf (mt, (pp@(PlacedPiece c cs):pps)) =
+-- TODO: Placed pieces are *not* ordered - we must make sure that pp is actually the first
+-- character of the word!
+isWordFitting pf (mt, bla@(pp@(PlacedPiece c cs):pps)) =
   isFirstValid && (all (isEqualOrEmpty pf mt) (init pps)) && isLastValid
   where
     -- Note: If the field is empty, then all three surrounding fields must be empty
@@ -208,12 +210,7 @@ distanceToMiddle (PlacedPiece _ (C (x,y))) = sqrt $ centerX ** 2 + centerY ** 2
     centerY = fromIntegral y -- 0.5
 
 cDistanceToMiddle :: Coordinates -> Double
-cDistanceToMiddle (C (x,y)) = sqrt $ centerX ** 2 + centerY ** 2
-  where
-    -- (x,y) is the top-right corner of a piece, and we have a sidelength of 1
-    -- TODO: Fix this for negative indices
-    centerX = fromIntegral x -- 0.5
-    centerY = fromIntegral y -- 0.5
+cDistanceToMiddle (C (x,y)) = sqrt $ fromIntegral $ x * x + y * y
 
 
 avgDistanceToMiddle :: [PlacedPiece] -> Double
@@ -223,9 +220,28 @@ avgDistanceToMiddle pps =  sum (map distanceToMiddle pps) / fromIntegral (length
 -- instance Ord PlacedPiece where
 --   pp1 `compare` pp2 = distanceToMiddle pp1 `compare` distanceToMiddle pp2
 
-instance Show PlacedPiece where
-  show pp = show $ distanceToMiddle pp
+-- keep visual noise to a minimum
+instance Show Coordinates where
+  show (C cs) = show cs
 
+-- show the character and the distance to the middle
+instance Show PlacedPiece where
+  show pp@(PlacedPiece c cs) = "PP " ++ [c, ' '] ++ (show $ distanceToMiddle pp)
+
+-- Important: Coordinates are used as the key in the playing field, which is a
+-- Data.Map. Since Data.Map is implemented as a tree it requires a *total* ordering
+-- of keys, otherwise two different keys but with the same ordering will overwrite
+-- each other!
+-- We want to use the distance to the center as an index, but since this value is
+-- *not* unique, we must make sure that we first order on the distance and second
+-- order on the coordinates themselves (i.e. first on the x-coordinate and then on
+-- the y-coordinate). This way we *can* guarantee a total ordering *and* have our
+-- index.
 instance Ord Coordinates where
-  c1 `compare` c2 = cDistanceToMiddle c1 `compare` cDistanceToMiddle c2
+  c1 `compare` c2 = case cDistanceToMiddle c1 `compare` cDistanceToMiddle c2 of
+    LT -> LT
+    GT -> GT
+    EQ -> case c1 == c2 of
+      True -> EQ
+      False -> cCoordinates c1 `compare` cCoordinates c2
 

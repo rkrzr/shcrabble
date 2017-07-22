@@ -4,7 +4,7 @@ module SVG (
 ) where
 
 import Data.List (intersperse)
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import Types
 
 generatePlayingFieldSVG :: PlayingField -> String

@@ -8,11 +8,10 @@ module Types (
   PlayingField
 ) where
 
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 
 newtype Coordinates = C {cCoordinates :: (Int, Int)}
-  deriving (Eq, Show)
--- type Coordinates = (Int, Int)
+  deriving (Eq)
 
 -- the bag of remaining words
 type Bag = [String]

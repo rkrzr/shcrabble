@@ -10,10 +10,10 @@ module Main where
 import qualified Lib as L
 import qualified Types as T
 
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 
 import Control.Monad (when)
-import Data.Ord (comparing)
+import Debug.Trace (trace, traceShowId)
 import Options.Applicative (execParser)
 import System.Directory (doesFileExist)
 
@@ -29,31 +29,31 @@ executeGame' os bag pf turn = do
   let filePath = (T.oSvgFile os) ++ show turn ++ ".svg"
   -- write an SVG file for each turn if requested
   _ <- when (T.oGenerateSvgPerTurn os) (L.writePlayingField filePath pf)
-  let maybeEndOfGame = placeWords bag pf
-  -- print $ sortBy (comparing fst) (Map.toList pf)
-  print $ Map.toAscList pf
+
+  print $ "Remaining bag: " ++ (show bag)
+  let maybeEndOfGame = placeWord bag pf
+  print $ "Ordered playing field: " ++ (show $ Map.toAscList pf)
   case maybeEndOfGame of
     Nothing          -> pure pf
     Just (pf', bag') -> executeGame' os bag' pf' (turn+1)
 
 
-placeWords :: T.Bag -> T.PlayingField -> Maybe (T.PlayingField, T.Bag)
-placeWords [] pf = Nothing  -- no words left in the bag
-placeWords ws pf = case ws of
-    []  -> Nothing  -- there were no more matching words
-    w:remainingWords -> Just (placeWord w pf, remainingWords)
+-- Place a word, as long as there are any fitting words left
+placeWord :: T.Bag -> T.PlayingField -> Maybe (T.PlayingField, T.Bag)
+placeWord [] pf = Nothing  -- no words left in the bag
+placeWord (w:remainingWords) pf = Just (placeWord' w pf, remainingWords)
 
 
-placeWord :: String -> T.PlayingField -> T.PlayingField
-placeWord word pf = case possiblePlacements of
+placeWord' :: String -> T.PlayingField -> T.PlayingField
+placeWord' word pf = case possiblePlacements of
     []  -> pf  -- just skip a word, if we cannot place it anywhere
     -- we arbitrarily pick the first possible placement
     pps:_ -> L.insertPlacedPieces pps pf
   where
-    -- and pick the first word that matches
-    possiblePlacements = concatMap (L.getFittingWords pf word) orderedPlacedPieces
     -- walk pf pieces from closest to the center to furthest from the center
     orderedPlacedPieces = map snd (Map.toAscList pf)
+    -- and pick the first word that matches
+    possiblePlacements = concatMap (L.getFittingWords pf word)  orderedPlacedPieces
 
 
 main :: IO ()
