@@ -16,7 +16,6 @@ import SVG
 import Types
 
 import Data.Semigroup ((<>))
-import Debug.Trace (trace, traceShowId)
 import Options.Applicative (Parser, ParserInfo, argument, fullDesc, header, help,
   helper, info, long, metavar, short, str, strOption, switch, (<**>))
 
@@ -228,7 +227,7 @@ instance Show Coordinates where
 instance Show PlacedPiece where
   show pp@(PlacedPiece c cs) = "PP " ++ [c, ' '] ++ (show $ distanceToMiddle pp)
 
--- Important: Coordinates are used as the key in the playing field, which is a
+-- Important: Coordinates are used as the key in the PlayingField, which is a
 -- Data.Map. Since Data.Map is implemented as a tree it requires a *total* ordering
 -- of keys, otherwise two different keys but with the same ordering will overwrite
 -- each other!

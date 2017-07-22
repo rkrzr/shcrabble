@@ -13,12 +13,10 @@ import qualified Types as T
 import qualified Data.Map.Strict as Map
 
 import Control.Monad (when)
-import Debug.Trace (trace, traceShowId)
 import Options.Applicative (execParser)
 import System.Directory (doesFileExist)
 
 
--- TODO: Don't copy this code
 executeGame :: T.Options -> T.Bag -> T.PlayingField -> IO T.PlayingField
 executeGame os bag pf = executeGame' os bag pf 1
 
@@ -30,9 +28,9 @@ executeGame' os bag pf turn = do
   -- write an SVG file for each turn if requested
   _ <- when (T.oGenerateSvgPerTurn os) (L.writePlayingField filePath pf)
 
-  print $ "Remaining bag: " ++ (show bag)
+  -- print $ "Remaining bag: " ++ (show bag)
   let maybeEndOfGame = placeWord bag pf
-  print $ "Ordered playing field: " ++ (show $ Map.toAscList pf)
+  -- print $ "Ordered playing field: " ++ (show $ Map.toAscList pf)
   case maybeEndOfGame of
     Nothing          -> pure pf
     Just (pf', bag') -> executeGame' os bag' pf' (turn+1)
