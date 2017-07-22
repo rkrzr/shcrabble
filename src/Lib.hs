@@ -203,8 +203,9 @@ distanceToMiddle :: PlacedPiece -> Double
 distanceToMiddle (PlacedPiece _ (x,y)) = sqrt $ centerX ** 2 + centerY ** 2
   where
     -- (x,y) is the top-right corner of a piece, and we have a sidelength of 1
-    centerX = fromIntegral x - 0.5
-    centerY = fromIntegral y - 0.5
+    -- TODO: Fix this for negative indices
+    centerX = fromIntegral x -- 0.5
+    centerY = fromIntegral y -- 0.5
 
 
 avgDistanceToMiddle :: [PlacedPiece] -> Double
@@ -216,3 +217,9 @@ instance Ord PlacedPiece where
 
 instance Show PlacedPiece where
   show pp = show $ distanceToMiddle pp
+
+-- TODO: Make Coordinates a newtype
+-- instance Ord Coordinates where
+--   c1 `compare` c2 =
+--     distanceToMiddle (PlacedPiece 'a' c1) `compare` distanceToMiddle (PlacedPiece 'a' c2)
+

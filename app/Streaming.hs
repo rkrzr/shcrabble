@@ -31,7 +31,7 @@ executeGame' os bag pf turn = do
   _ <- when (T.oGenerateSvgPerTurn os) (L.writePlayingField filePath pf)
   let maybeEndOfGame = placeWords bag pf
   -- print $ sortBy (comparing fst) (Map.toList pf)
-  print pf
+  print $ Map.toAscList pf
   case maybeEndOfGame of
     Nothing          -> pure pf
     Just (pf', bag') -> executeGame' os bag' pf' (turn+1)
@@ -50,9 +50,10 @@ placeWord word pf = case possiblePlacements of
     -- we arbitrarily pick the first possible placement
     pps:_ -> L.insertPlacedPieces pps pf
   where
-    -- TODO: Walk pf pieces from closest to the center to furthest from the center
     -- and pick the first word that matches
-    possiblePlacements = concatMap (L.getFittingWords pf word) (Map.elems pf)
+    possiblePlacements = concatMap (L.getFittingWords pf word) orderedPlacedPieces
+    -- walk pf pieces from closest to the center to furthest from the center
+    orderedPlacedPieces = map snd (Map.toAscList pf)
 
 
 main :: IO ()

@@ -10,6 +10,7 @@ module Types (
 
 import qualified Data.Map as Map
 
+-- newtype Coordinates = Coordinates (Int, Int) deriving (Eq, Show)
 type Coordinates = (Int, Int)
 
 -- the bag of remaining words
