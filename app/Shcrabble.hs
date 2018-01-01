@@ -12,7 +12,7 @@ import System.Directory (doesFileExist)
 import qualified Data.Map as Map
 
 executeTurn :: PlayingField -> Bag -> Maybe (PlayingField, Bag)
-executeTurn pf [] = Nothing -- end of the game
+executeTurn _pf [] = Nothing -- end of the game
 executeTurn pf ws =
   case sortedPlacements of
     [] -> Nothing
@@ -22,11 +22,11 @@ executeTurn pf ws =
     availablePlacedPieces = getAvailablePlacedPieces pf
     wordsAndPieces = [(w, pp) | w <- ws, pp <- availablePlacedPieces]
     allPlacementOptions = concatMap (\(w, pp) -> getAllPlacementOptions w pf pp) wordsAndPieces
-    viablePlacementOptions = filter (\(w, pps) -> not (null pps)) allPlacementOptions
+    viablePlacementOptions = filter (\(_, pps) -> not (null pps)) allPlacementOptions
     -- find the placement the closest to the center of the playing field
     sortedPlacements =
       sortBy
-        (\(w1, pps1) (w2, pps2) -> comparing avgDistanceToMiddle pps1 pps2)
+        (\(_w1, pps1) (_w2, pps2) -> comparing avgDistanceToMiddle pps1 pps2)
         viablePlacementOptions
 
 executeGame :: Options -> PlayingField -> Bag -> IO PlayingField

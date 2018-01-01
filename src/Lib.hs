@@ -18,7 +18,7 @@ import Types
 import Data.Semigroup ((<>))
 import Options.Applicative
        (Parser, ParserInfo, (<**>), argument, fullDesc, header, help,
-        helper, info, long, metavar, short, str, strOption, switch)
+        helper, info, long, metavar, short, str, switch)
 
 import qualified Data.Map.Strict as Map
 
@@ -37,10 +37,13 @@ optionsInfo = info parser description
     description = fullDesc <> header "Shcrabble - generate Scrabble-boards from any text file!"
 
 -- we limit ourselves to only ASCII chars fow now
+lowerAlphabet :: [Char]
 lowerAlphabet = ['a' .. 'z']
 
+upperAlphabet :: [Char]
 upperAlphabet = ['A' .. 'Z']
 
+allowedCharacters :: [Char]
 allowedCharacters = lowerAlphabet ++ upperAlphabet
 
 readWordFile :: FilePath -> IO [String]
@@ -68,7 +71,7 @@ writePlayingField filePath pf = writeFile filePath (generatePlayingFieldSVG pf)
 
 insertPlacedPieces :: [PlacedPiece] -> PlayingField -> PlayingField
 insertPlacedPieces [] pf = pf
-insertPlacedPieces (pp@(PlacedPiece c cs):pps) pf =
+insertPlacedPieces (pp@(PlacedPiece _ cs):pps) pf =
   case Map.lookup cs pf of
     Nothing -> insertPlacedPieces pps (Map.insert cs pp pf)
     Just pp' ->
@@ -84,18 +87,10 @@ getAvailablePlacedPieces pf = filter (isPieceAvailable pf) (Map.elems pf)
 -- a piece is available if either its left and right or upper and lower
 -- neigbors are free
 isPieceAvailable :: PlayingField -> PlacedPiece -> Bool
-isPieceAvailable pf (PlacedPiece c cs) = isVerticalFree || isHorizontalFree
+isPieceAvailable pf (PlacedPiece _ cs) = isVerticalFree || isHorizontalFree
   where
-    neighbors = getNeighbors pf cs
     isVerticalFree = emptyNeighbors cs [Up, Down] pf
     isHorizontalFree = emptyNeighbors cs [L, R] pf
-
-getNeighbors :: PlayingField -> Coordinates -> Map.Map Direction (Maybe PlacedPiece)
-getNeighbors pf (C (x, y)) = Map.map (\cs -> Map.lookup cs pf) neighborMap
-  where
-    neighborCoordinates =
-      [(L, (C (x - 1, y))), (R, (C (x + 1, y))), (Up, (C (x, y + 1))), (Down, (C (x, y - 1)))]
-    neighborMap = Map.fromList neighborCoordinates
 
 -- check if the neighbors in the given directions are all empty
 emptyNeighbors :: Coordinates -> [Direction] -> PlayingField -> Bool
@@ -112,17 +107,17 @@ goOne R (C (x, y)) = (C (x + 1, y))
 
 -- check if the given word does not touch or overlap with conflicting pieces
 isWordFitting :: PlayingField -> (MoveType, [PlacedPiece]) -> Bool
-isWordFitting pf (_, []) = True
+isWordFitting _pf (_, []) = True
 -- TODO: Placed pieces are *not* ordered - we must make sure that pp is actually the first
 -- character of the word!
-isWordFitting pf (mt, bla@(pp@(PlacedPiece c cs):pps)) =
+isWordFitting pf (mt, (pp:pps)) =
   isFirstValid && (all (isEqualOrEmpty pf mt) (init pps)) && isLastValid
     -- Note: If the field is empty, then all three surrounding fields must be empty
     -- If the field is not empty, then only the field in the same direction must be empty
   where
     isFieldValid (PlacedPiece c cs) d ds =
       case Map.lookup cs pf of
-        Just (PlacedPiece c' cs') -> c == c' && isNeighborEmpty cs pf d
+        Just (PlacedPiece c' _) -> c == c' && isNeighborEmpty cs pf d
         Nothing -> emptyNeighbors cs ds pf
     isFirstValid =
       case mt of
@@ -147,7 +142,7 @@ isEqualOrEmpty pf mt (PlacedPiece c cs) =
 
 -- For the given word, return *all* possible placements given the contraints of the playing field
 getFittingWords :: PlayingField -> String -> PlacedPiece -> [[PlacedPiece]]
-getFittingWords pf [] pp = []
+getFittingWords _ [] _ = []
 getFittingWords pf word pp = map snd fittingPlacements
   where
     possiblePlacements = getAllPossiblePlacements word pp
@@ -167,8 +162,8 @@ getDirectionalPlacements word mt pp = getDirectionalPlacements' [] word mt pp
 -- Note: We are generating all theoretical options here, they may not be possible
 -- in practice, if there are already different pieces on the playing field
 getDirectionalPlacements' :: String -> String -> MoveType -> PlacedPiece -> [[PlacedPiece]]
-getDirectionalPlacements' prefix [] mt pp@(PlacedPiece c cs) = []
-getDirectionalPlacements' prefix (x:xs) mt pp@(PlacedPiece c cs) =
+getDirectionalPlacements' _prefix [] _ _ = []
+getDirectionalPlacements' prefix (x:xs) mt pp@(PlacedPiece c _cs) =
   case x == c
   -- skip characters that don't match
         of
@@ -190,7 +185,7 @@ getDirectionalPlacements' prefix (x:xs) mt pp@(PlacedPiece c cs) =
 
 placeString :: Direction -> String -> PlacedPiece -> [PlacedPiece]
 placeString _ [] _ = []
-placeString d (w:ws) (PlacedPiece c cs) = pp' : placeString d ws pp'
+placeString d (w:ws) (PlacedPiece _ cs) = pp' : placeString d ws pp'
   where
     cs' = goOne d cs
     pp' = PlacedPiece w cs'

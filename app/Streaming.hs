@@ -33,7 +33,7 @@ executeGame' os bag pf turn = do
 
 -- Place a word, as long as there are any fitting words left
 placeWord :: T.Bag -> T.PlayingField -> Maybe (T.PlayingField, T.Bag)
-placeWord [] pf = Nothing -- no words left in the bag
+placeWord [] _pf = Nothing -- no words left in the bag
 placeWord (w:remainingWords) pf = Just (placeWord' w pf, remainingWords)
 
 placeWord' :: String -> T.PlayingField -> T.PlayingField
