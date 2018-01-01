@@ -14,6 +14,8 @@ module Lib
 
 import SVG
 import Types
+       (Coordinates(..), Direction(..), MoveType(..), Options(..),
+        PlacedPiece(..), PlayingField, distanceToMiddle)
 
 import Data.Semigroup ((<>))
 import Options.Applicative
@@ -194,46 +196,6 @@ placeString d (w:ws) (PlacedPiece _ cs) = pp' : placeString d ws pp'
 getAllPlacementOptions :: String -> PlayingField -> PlacedPiece -> [(String, [PlacedPiece])]
 getAllPlacementOptions w pf pp = map (\pps -> (w, pps)) $ getFittingWords pf w pp
 
-distanceToMiddle :: PlacedPiece -> Double
-distanceToMiddle (PlacedPiece _ (C (x, y))) = sqrt $ centerX ** 2 + centerY ** 2
-    -- (x,y) is the top-right corner of a piece, and we have a sidelength of 1
-    -- TODO: Fix this for negative indices
-  where
-    centerX = fromIntegral x -- 0.5
-    centerY = fromIntegral y -- 0.5
-
-cDistanceToMiddle :: Coordinates -> Double
-cDistanceToMiddle (C (x, y)) = sqrt $ fromIntegral $ x * x + y * y
-
 avgDistanceToMiddle :: [PlacedPiece] -> Double
 avgDistanceToMiddle [] = 0
 avgDistanceToMiddle pps = sum (map distanceToMiddle pps) / fromIntegral (length pps)
-
--- instance Ord PlacedPiece where
---   pp1 `compare` pp2 = distanceToMiddle pp1 `compare` distanceToMiddle pp2
--- keep visual noise to a minimum
-instance Show Coordinates where
-  show (C cs) = show cs
-
--- show the character and the distance to the middle
-instance Show PlacedPiece where
-  show pp@(PlacedPiece c cs) = "PP " ++ [c, ' '] ++ (show $ distanceToMiddle pp)
-
--- Important: Coordinates are used as the key in the PlayingField, which is a
--- Data.Map. Since Data.Map is implemented as a tree it requires a *total* ordering
--- of keys, otherwise two different keys but with the same ordering will overwrite
--- each other!
--- We want to use the distance to the center as an index, but since this value is
--- *not* unique, we must make sure that we first order on the distance and second
--- order on the coordinates themselves (i.e. first on the x-coordinate and then on
--- the y-coordinate). This way we *can* guarantee a total ordering *and* have our
--- index.
-instance Ord Coordinates where
-  c1 `compare` c2 =
-    case cDistanceToMiddle c1 `compare` cDistanceToMiddle c2 of
-      LT -> LT
-      GT -> GT
-      EQ ->
-        case c1 == c2 of
-          True -> EQ
-          False -> cCoordinates c1 `compare` cCoordinates c2
